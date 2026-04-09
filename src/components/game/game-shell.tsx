@@ -11,6 +11,7 @@ import { WordInput } from "./word-input";
 import { WordList } from "./word-list";
 import { ScoreDisplay } from "./score-display";
 import { Feedback } from "./feedback";
+import { CustomKeyboard } from "./custom-keyboard";
 import { HintsPanel } from "./hints-panel";
 import { ResultsScreen } from "../review/results-screen";
 import { AUTO_SAVE_INTERVAL } from "@/lib/constants";
@@ -212,9 +213,16 @@ export function GameShell() {
         </div>
       )}
 
-      {/* Keyboard input */}
-      <div className="flex flex-col items-center gap-3 w-full">
+      {/* Word display + custom keyboard */}
+      <div className="flex flex-col items-center gap-2 w-full">
         <WordInput
+          value={currentWord}
+          onChange={setCurrentWord}
+          onSubmit={handleKeyboardSubmit}
+          disabled={phase !== "playing"}
+        />
+
+        <CustomKeyboard
           value={currentWord}
           onChange={setCurrentWord}
           onSubmit={handleKeyboardSubmit}
@@ -224,7 +232,7 @@ export function GameShell() {
         <button
           type="button"
           onClick={handleDone}
-          className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
+          className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline mt-1"
         >
           {gameMode === "zen" ? "I'm done" : "End early"}
         </button>
