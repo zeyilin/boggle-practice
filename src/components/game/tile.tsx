@@ -27,14 +27,11 @@ export function Tile({
   onPointerEnter,
   onPointerUp,
 }: TileProps) {
-  const size = gridSize === 4 ? "w-16 h-16 sm:w-20 sm:h-20" : "w-14 h-14 sm:w-16 sm:h-16";
-
   return (
     <button
       type="button"
       className={cn(
-        size,
-        "rounded-lg font-bold text-xl sm:text-2xl select-none touch-none",
+        "aspect-square w-full rounded-lg font-bold text-xl sm:text-2xl select-none touch-none",
         "flex items-center justify-center transition-all duration-100",
         "border-2",
         isSelected

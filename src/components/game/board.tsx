@@ -35,7 +35,7 @@ export function Board({
 
   return (
     <div
-      className="inline-grid gap-1.5 sm:gap-2 touch-none"
+      className="grid gap-1.5 sm:gap-2 touch-none w-full max-w-[400px] sm:max-w-[420px]"
       style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
       onPointerUp={onPointerUp}
     >

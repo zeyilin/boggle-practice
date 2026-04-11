@@ -119,28 +119,21 @@ export function GameShell() {
     swipe.currentWord.length > 0 ? swipe.currentWord : tap.currentWord;
   const displayWord = touchWord || currentWord;
 
-  // Determine which handlers to pass to Board based on input mode
-  const useSwipe =
-    isTouchDevice && (touchInputMode === "swipe" || touchInputMode === "both");
+  // Swipe/drag handlers always enabled (works on both mouse and touch)
+  // Tap mode only on touch devices with tap/both setting
   const useTap =
     isTouchDevice && (touchInputMode === "tap" || touchInputMode === "both");
 
-  // For "both" mode, swipe handlers take priority (tap uses onPointerDown only)
-  const boardHandlers = useSwipe
-    ? {
-        onPointerDown: swipe.handlers.onPointerDown,
-        onPointerEnter: swipe.handlers.onPointerEnter,
-        onPointerUp: swipe.handlers.onPointerUp,
-      }
-    : useTap
-      ? {
-          onPointerDown: tap.handlers.onPointerDown,
-        }
-      : {};
+  // Always pass swipe handlers so drag-and-release works on all devices
+  const boardHandlers = {
+    onPointerDown: swipe.handlers.onPointerDown,
+    onPointerEnter: swipe.handlers.onPointerEnter,
+    onPointerUp: swipe.handlers.onPointerUp,
+  };
 
-  // Compute disabled tiles for tap mode
+  // Compute disabled tiles for tap-only mode
   const disabledTiles =
-    useTap && !useSwipe
+    useTap && touchInputMode === "tap"
       ? (() => {
           const valid = tap.validTiles;
           const disabled = new Set<string>();

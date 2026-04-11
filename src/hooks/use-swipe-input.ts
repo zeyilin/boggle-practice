@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { Position } from "@/lib/types";
 import { isAdjacent } from "@/lib/adjacency";
 
@@ -28,21 +28,8 @@ export function useSwipeInput({ board, onSubmit }: UseSwipeInputOptions) {
   const pathRef = useRef<Position[]>([]);
   const visitedRef = useRef<Set<string>>(new Set());
 
-  const startSwipe = useCallback(
+  const addTile = useCallback(
     (row: number, col: number) => {
-      isSwipingRef.current = true;
-      const path: Position[] = [[row, col]];
-      pathRef.current = path;
-      visitedRef.current = new Set([posKey(row, col)]);
-      setCurrentPath(path);
-    },
-    [],
-  );
-
-  const continueSwipe = useCallback(
-    (row: number, col: number) => {
-      if (!isSwipingRef.current) return;
-
       const key = posKey(row, col);
       const path = pathRef.current;
 
@@ -73,6 +60,25 @@ export function useSwipeInput({ board, onSubmit }: UseSwipeInputOptions) {
     [],
   );
 
+  const startSwipe = useCallback(
+    (row: number, col: number) => {
+      isSwipingRef.current = true;
+      const path: Position[] = [[row, col]];
+      pathRef.current = path;
+      visitedRef.current = new Set([posKey(row, col)]);
+      setCurrentPath(path);
+    },
+    [],
+  );
+
+  const continueSwipe = useCallback(
+    (row: number, col: number) => {
+      if (!isSwipingRef.current) return;
+      addTile(row, col);
+    },
+    [addTile],
+  );
+
   const endSwipe = useCallback(() => {
     if (!isSwipingRef.current) return;
     isSwipingRef.current = false;
@@ -88,6 +94,43 @@ export function useSwipeInput({ board, onSubmit }: UseSwipeInputOptions) {
     setCurrentPath([]);
   }, [board, onSubmit]);
 
+  // Use pointermove on document to track finger position over tiles.
+  // On touch devices, pointerenter doesn't fire on siblings during a drag,
+  // so we use elementFromPoint to detect which tile the pointer is over.
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!isSwipingRef.current) return;
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el) return;
+
+      // Find the closest button with an aria-label containing tile info
+      const tile = el.closest("button[aria-label^='Tile']");
+      if (!tile) return;
+
+      const label = tile.getAttribute("aria-label") ?? "";
+      const match = label.match(/row (\d+), column (\d+)/);
+      if (!match) return;
+
+      const row = parseInt(match[1], 10) - 1;
+      const col = parseInt(match[2], 10) - 1;
+      continueSwipe(row, col);
+    };
+
+    const handlePointerUp = () => {
+      if (isSwipingRef.current) {
+        endSwipe();
+      }
+    };
+
+    document.addEventListener("pointermove", handlePointerMove);
+    document.addEventListener("pointerup", handlePointerUp);
+    return () => {
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [continueSwipe, endSwipe]);
+
   const cancelSwipe = useCallback(() => {
     isSwipingRef.current = false;
     pathRef.current = [];
@@ -100,6 +143,7 @@ export function useSwipeInput({ board, onSubmit }: UseSwipeInputOptions) {
     currentWord: boardLetterToWord(board, currentPath),
     handlers: {
       onPointerDown: startSwipe,
+      // Keep onPointerEnter for mouse hover (works well on desktop)
       onPointerEnter: continueSwipe,
       onPointerUp: endSwipe,
     },
