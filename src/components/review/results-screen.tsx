@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { GameRecord, Position } from "@/lib/types";
 import { scoreWord } from "@/lib/scoring";
 import { useReviewStore } from "@/stores/review-store";
@@ -15,6 +16,7 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
+  const router = useRouter();
   const [sortMode, setSortMode] = useState<SortMode>("length");
   const [highlightedPath, setHighlightedPath] = useState<Position[] | undefined>();
   const { maybeAddToReview, updateAfterReview } = useReviewStore();
@@ -152,13 +154,22 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onPlayAgain}
-        className="h-12 px-8 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-lg transition-transform active:scale-[0.98]"
-      >
-        Play Again
-      </button>
+      <div className="flex gap-4">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="h-12 px-8 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold text-lg transition-transform active:scale-[0.98]"
+        >
+          Home
+        </button>
+        <button
+          type="button"
+          onClick={onPlayAgain}
+          className="h-12 px-8 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-lg transition-transform active:scale-[0.98]"
+        >
+          Play Again
+        </button>
+      </div>
     </div>
   );
 }

@@ -182,7 +182,8 @@ export function GameShell() {
           {...boardHandlers}
         />
 
-        <div className="w-full lg:w-64">
+        {/* Word list: hidden on mobile to keep keyboard visible, shown on desktop sidebar */}
+        <div className="hidden lg:block lg:w-64">
           <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
             Found Words ({wordsFound.length})
           </h2>
@@ -237,6 +238,16 @@ export function GameShell() {
           {gameMode === "zen" ? "I'm done" : "End early"}
         </button>
       </div>
+
+      {/* Word list on mobile: compact collapsible below keyboard */}
+      <details className="w-full max-w-[500px] lg:hidden">
+        <summary className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide cursor-pointer py-1">
+          Found Words ({wordsFound.length})
+        </summary>
+        <div className="mt-2">
+          <WordList words={wordsFound} gridSize={gridSize} />
+        </div>
+      </details>
     </div>
   );
 }

@@ -51,24 +51,25 @@ export function CustomKeyboard({
   }, [value, onSubmit, disabled]);
 
   return (
-    <div className="w-full max-w-md select-none">
+    <div className="w-full max-w-[500px] select-none px-2">
       {ROWS.map((row, i) => (
-        <div key={i} className="flex justify-center gap-[3px] sm:gap-1 mb-[3px] sm:mb-1">
-          {/* Backspace on last row, left side */}
+        <div key={i} className="flex justify-center gap-[6px] mb-[8px]">
+          {/* Half-key spacer for row 2 (ASDFGHJKL) to match Wordle indentation */}
+          {i === 1 && <div className="flex-[0.5]" />}
+          {/* Enter on last row, left side (Wordle layout) */}
           {i === 2 && (
             <button
               type="button"
-              onClick={handleBackspace}
-              disabled={disabled}
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim()}
               className={cn(
-                "h-11 sm:h-12 px-2.5 sm:px-3 rounded-md font-semibold text-sm",
-                "bg-zinc-300 dark:bg-zinc-600 text-zinc-700 dark:text-zinc-200",
-                "active:scale-95 active:bg-zinc-400 dark:active:bg-zinc-500 transition-all",
-                "disabled:opacity-40",
+                "h-[50px] sm:h-[58px] flex-[1.5] rounded text-[11px] sm:text-xs font-bold uppercase",
+                "bg-[#d3d6da] dark:bg-[#818384] text-zinc-900 dark:text-white",
+                "active:brightness-110 transition-all",
+                "disabled:opacity-40 disabled:cursor-not-allowed",
               )}
-              aria-label="Backspace"
             >
-              &#9003;
+              ENTER
             </button>
           )}
           {row.map((letter) => (
@@ -78,33 +79,37 @@ export function CustomKeyboard({
               onClick={() => handleKey(letter)}
               disabled={disabled}
               className={cn(
-                "h-11 sm:h-12 min-w-[28px] sm:min-w-[34px] px-1 sm:px-1.5 rounded-md",
-                "font-bold text-base sm:text-lg",
-                "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100",
-                "border border-zinc-300 dark:border-zinc-600",
-                "active:scale-95 active:bg-zinc-200 dark:active:bg-zinc-600 transition-all",
+                "h-[50px] sm:h-[58px] flex-1 rounded",
+                "font-bold text-[14px] sm:text-[15px]",
+                "bg-[#d3d6da] dark:bg-[#818384] text-zinc-900 dark:text-white",
+                "active:brightness-110 transition-all",
                 "disabled:opacity-40",
               )}
             >
               {letter}
             </button>
           ))}
-          {/* Submit on last row, right side */}
+          {/* Backspace on last row, right side (Wordle layout) */}
           {i === 2 && (
             <button
               type="button"
-              onClick={handleSubmit}
-              disabled={disabled || !value.trim()}
+              onClick={handleBackspace}
+              disabled={disabled}
               className={cn(
-                "h-11 sm:h-12 px-2.5 sm:px-3 rounded-md font-semibold text-sm",
-                "bg-blue-500 text-white",
-                "active:scale-95 active:bg-blue-600 transition-all",
-                "disabled:opacity-40 disabled:cursor-not-allowed",
+                "h-[50px] sm:h-[58px] flex-[1.5] rounded font-bold text-base sm:text-lg",
+                "bg-[#d3d6da] dark:bg-[#818384] text-zinc-900 dark:text-white",
+                "active:brightness-110 transition-all",
+                "disabled:opacity-40",
               )}
+              aria-label="Backspace"
             >
-              GO
+              <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" className="mx-auto fill-current">
+                <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z" />
+              </svg>
             </button>
           )}
+          {/* Half-key spacer for row 2 */}
+          {i === 1 && <div className="flex-[0.5]" />}
         </div>
       ))}
     </div>

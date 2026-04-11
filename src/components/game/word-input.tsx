@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 
 interface WordInputProps {
   value: string;
@@ -48,33 +48,18 @@ export function WordInput({ value, onChange, onSubmit, disabled }: WordInputProp
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [disabled, value, onChange, onSubmit]);
 
-  const handleClear = useCallback(() => {
-    onChange("");
-  }, [onChange]);
-
   return (
-    <div className="flex items-center gap-2 w-full max-w-md">
+    <div className="flex items-center gap-2 w-full max-w-[500px] px-2">
       <div
-        className="flex-1 h-12 px-4 rounded-lg bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600 text-lg font-mono uppercase tracking-wider flex items-center min-w-0"
+        className="flex-1 h-11 sm:h-12 px-4 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-lg font-mono uppercase tracking-wider flex items-center justify-center min-w-0"
         aria-label="Current word"
       >
         {value ? (
-          <span>{value}</span>
+          <span className="text-zinc-900 dark:text-white font-bold">{value}</span>
         ) : (
-          <span className="text-zinc-400 dark:text-zinc-500">TYPE A WORD...</span>
+          <span className="text-zinc-400 dark:text-zinc-500 text-sm">TYPE A WORD...</span>
         )}
       </div>
-      {value && (
-        <button
-          type="button"
-          onClick={handleClear}
-          disabled={disabled}
-          className="h-12 px-3 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold active:scale-95 transition-all disabled:opacity-50"
-          aria-label="Clear word"
-        >
-          &#10005;
-        </button>
-      )}
     </div>
   );
 }
