@@ -148,25 +148,25 @@ export function GameShell() {
       : undefined;
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 w-full max-w-4xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto h-[100dvh] overflow-hidden px-3 py-2 gap-1">
       {/* Header */}
-      <div className="flex items-center justify-between w-full max-w-sm">
+      <div className="flex items-center justify-between w-full max-w-sm shrink-0">
         <Timer elapsedTime={elapsedTime} timerDuration={timerDuration} />
         <ScoreDisplay score={score} wordsFound={wordsFound.length} />
       </div>
 
-      {/* Current word display */}
-      <div className="h-8 flex items-center gap-3">
+      {/* Current word display + feedback */}
+      <div className="h-7 flex items-center gap-3 shrink-0">
         {displayWord && (
-          <span className="text-xl font-mono font-bold tracking-widest">
+          <span className="text-lg font-mono font-bold tracking-widest">
             {displayWord}
           </span>
         )}
         <Feedback result={lastSubmitResult} />
       </div>
 
-      {/* Board + word list */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start w-full justify-center">
+      {/* Board area — grows to fill available space */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center lg:items-start w-full justify-center flex-1 min-h-0">
         <Board
           board={board}
           gridSize={gridSize}
@@ -175,8 +175,8 @@ export function GameShell() {
           {...boardHandlers}
         />
 
-        {/* Word list: hidden on mobile to keep keyboard visible, shown on desktop sidebar */}
-        <div className="hidden lg:block lg:w-64">
+        {/* Word list: desktop sidebar only */}
+        <div className="hidden lg:block lg:w-64 overflow-y-auto max-h-full">
           <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
             Found Words ({wordsFound.length})
           </h2>
@@ -189,26 +189,26 @@ export function GameShell() {
 
       {/* Touch controls for tap mode */}
       {useTap && tap.currentPath.length > 0 && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 shrink-0">
           <button
             type="button"
             onClick={tap.clear}
-            className="h-10 px-5 rounded-lg bg-zinc-200 dark:bg-zinc-700 font-medium"
+            className="h-9 px-4 rounded-lg bg-zinc-200 dark:bg-zinc-700 font-medium text-sm"
           >
             Clear
           </button>
           <button
             type="button"
             onClick={tap.submit}
-            className="h-10 px-5 rounded-lg bg-blue-500 text-white font-medium"
+            className="h-9 px-4 rounded-lg bg-blue-500 text-white font-medium text-sm"
           >
             Submit
           </button>
         </div>
       )}
 
-      {/* Word display + custom keyboard */}
-      <div className="flex flex-col items-center gap-2 w-full">
+      {/* Word display + custom keyboard — pinned to bottom, never scrolls off */}
+      <div className="flex flex-col items-center gap-1 w-full shrink-0">
         <WordInput
           value={currentWord}
           onChange={setCurrentWord}
@@ -223,24 +223,20 @@ export function GameShell() {
           disabled={phase !== "playing"}
         />
 
-        <button
-          type="button"
-          onClick={handleDone}
-          className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline mt-1"
-        >
-          {gameMode === "zen" ? "I'm done" : "End early"}
-        </button>
-      </div>
-
-      {/* Word list on mobile: compact collapsible below keyboard */}
-      <details className="w-full max-w-[500px] lg:hidden">
-        <summary className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide cursor-pointer py-1">
-          Found Words ({wordsFound.length})
-        </summary>
-        <div className="mt-2">
-          <WordList words={wordsFound} gridSize={gridSize} />
+        <div className="flex items-center gap-4 pb-1">
+          <button
+            type="button"
+            onClick={handleDone}
+            className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
+          >
+            {gameMode === "zen" ? "I'm done" : "End early"}
+          </button>
+          {/* Mobile found words toggle */}
+          <span className="text-xs text-zinc-400 dark:text-zinc-500 lg:hidden">
+            {wordsFound.length} words found
+          </span>
         </div>
-      </details>
+      </div>
     </div>
   );
 }
