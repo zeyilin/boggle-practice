@@ -2,6 +2,8 @@
  * Service worker registration and update management.
  */
 
+let swRegistration: ServiceWorkerRegistration | null = null;
+
 export function registerServiceWorker(
   onUpdateAvailable?: () => void,
 ) {
@@ -10,6 +12,7 @@ export function registerServiceWorker(
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("/sw.js");
+      swRegistration = reg;
 
       // Check for updates
       reg.addEventListener("updatefound", () => {
@@ -38,6 +41,14 @@ export function registerServiceWorker(
 }
 
 export function skipWaiting() {
-  navigator.serviceWorker.controller?.postMessage({ type: "SKIP_WAITING" });
-  window.location.reload();
+  const waiting = swRegistration?.waiting;
+  if (!waiting) return;
+
+  // Wait for the new SW to take control before reloading
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
+
+  // Tell the waiting worker to activate
+  waiting.postMessage({ type: "SKIP_WAITING" });
 }
