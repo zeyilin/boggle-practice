@@ -124,9 +124,11 @@ export function GameShell() {
     swipe.currentWord.length > 0 ? swipe.currentWord : tap.currentWord;
   const displayWord = touchWord || currentWord;
 
-  // Determine which handlers to pass to Board based on input mode
+  // Determine which handlers to pass to Board based on input mode.
+  // Drag-to-trace works with any pointer (finger or mouse), so it isn't
+  // gated on touch; tap-to-spell stays a touch affordance.
   const useSwipe =
-    isTouchDevice && (touchInputMode === "swipe" || touchInputMode === "both");
+    touchInputMode === "swipe" || touchInputMode === "both";
   const useTap =
     isTouchDevice && (touchInputMode === "tap" || touchInputMode === "both");
 
@@ -179,8 +181,10 @@ export function GameShell() {
 
         {/* Board stage: a size container so the board fills whatever space
             remains, constrained by both width and height, on any resize */}
+        {/* Top-aligned on phones so slack collects in one place (above the
+            input) instead of splitting into gaps around the board */}
         <div className="min-h-0 w-full flex-1 [container-type:size]">
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex h-full w-full items-start justify-center lg:items-center">
             <Board
               board={board}
               gridSize={gridSize}

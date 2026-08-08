@@ -20,6 +20,13 @@ function posKey(r: number, c: number): string {
   return `${r},${c}`;
 }
 
+// Tile centers as percentages of the board, for the SVG trace overlay.
+// With 1fr grid tracks and a small even gap, centers sit at the
+// fraction midpoints closely enough for the line to read correctly.
+function tileCenterPct(index: number, gridSize: number): number {
+  return ((index + 0.5) / gridSize) * 100;
+}
+
 export function Board({
   board,
   gridSize,
@@ -36,13 +43,25 @@ export function Board({
     (highlightedPath ?? []).map(([r, c]) => posKey(r, c)),
   );
 
+  // Trace line over the active path: the live swipe path while tracing,
+  // otherwise a highlighted word path (solver / results).
+  const isTracing = selectedPath.length >= 2;
+  const tracePath = isTracing ? selectedPath : (highlightedPath ?? []);
+  const traceColor = isTracing
+    ? "rgba(59, 130, 246, 0.75)" // blue-500
+    : "rgba(34, 197, 94, 0.75)"; // green-500
+  const linePoints = tracePath.map(([r, c]) => ({
+    x: tileCenterPct(c, gridSize),
+    y: tileCenterPct(r, gridSize),
+  }));
+
   // The board is a fluid square that fills whatever width its parent gives it.
   // It registers as an inline-size container so tile gaps, corner radii, and
   // letter sizes (cqw units) all scale with the board itself.
   return (
     <div
       className={cn(
-        "aspect-square w-full [container-type:inline-size]",
+        "relative aspect-square w-full [container-type:inline-size]",
         className,
       )}
     >
@@ -72,6 +91,34 @@ export function Board({
           )),
         )}
       </div>
+
+      {/* Trace-line overlay for the active swipe or highlighted word path */}
+      {linePoints.length >= 2 && (
+        <svg
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
+          <polyline
+            points={linePoints.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill="none"
+            stroke={traceColor}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          {linePoints.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={i === 0 ? 2.2 : 1.4}
+              fill={traceColor}
+            />
+          ))}
+        </svg>
+      )}
     </div>
   );
 }

@@ -59,8 +59,11 @@ async function main() {
   if (!fs.existsSync(twlDest)) {
     console.log("Downloading TWL06 word list...");
     try {
+      // Public copy of TWL06 (178,691 words). The previously used
+      // benhoyt/boggle list was NOT TWL06 and was missing common plurals
+      // (TOYS, CATS, RUNS...).
       await download(
-        "https://raw.githubusercontent.com/benhoyt/boggle/master/word-list.txt",
+        "https://raw.githubusercontent.com/jonbcard/scrabble-bot/master/src/dictionary.txt",
         twlDest,
       );
       console.log("✓ TWL06 downloaded");
