@@ -71,7 +71,7 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 p-4 w-full max-w-4xl mx-auto">
+    <div className="flex w-full flex-col items-center gap-6 p-4 lg:mx-auto lg:max-w-[1800px] lg:p-6">
       <h1 className="text-2xl font-bold">Game Over</h1>
 
       {/* Summary */}
@@ -83,15 +83,18 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
       </div>
 
       {/* Board + missed words layout */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start w-full justify-center">
-        <Board
-          board={record.board}
-          gridSize={record.gridSize}
-          selectedPath={[]}
-          highlightedPath={highlightedPath}
-        />
+      <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
+        <div className="w-full lg:flex-[2_1_0%] lg:sticky lg:top-6">
+          <Board
+            board={record.board}
+            gridSize={record.gridSize}
+            selectedPath={[]}
+            highlightedPath={highlightedPath}
+            className="mx-auto max-w-[max(16rem,calc(100dvh-16rem))]"
+          />
+        </div>
 
-        <div className="w-full lg:w-80">
+        <div className="w-full lg:flex-[1_1_0%]">
           {/* Sort controls */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">Missed words:</span>
@@ -114,7 +117,7 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
           </div>
 
           {/* Missed words list */}
-          <div className="flex flex-col gap-0.5 max-h-80 overflow-y-auto">
+          <div className="flex flex-col gap-0.5 max-h-[50dvh] overflow-y-auto">
             {sortedMissed.map((w) => (
               <button
                 key={w.word}
@@ -135,7 +138,7 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
             <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
               Found words ({record.wordsFound.length}):
             </div>
-            <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto">
+            <div className="flex flex-col gap-0.5 max-h-[30dvh] overflow-y-auto">
               {record.wordsFound.map((word) => (
                 <div
                   key={word}

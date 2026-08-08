@@ -64,7 +64,7 @@ export default function SolverPage() {
   const sortedGroups = [...grouped.entries()].sort((a, b) => b[0] - a[0]);
 
   return (
-    <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
+    <div className="flex w-full flex-col items-center p-4 lg:mx-auto lg:max-w-[1800px] lg:p-6">
       <div className="flex items-center w-full mb-6">
         <button
           onClick={() => router.push("/")}
@@ -77,13 +77,14 @@ export default function SolverPage() {
         </h1>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start w-full justify-center">
-        <div className="flex flex-col items-center gap-4">
+      <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
+        <div className="flex w-full flex-col items-center gap-4 lg:flex-[2_1_0%]">
           <Board
             board={board}
             gridSize={gridSize}
             selectedPath={[]}
             highlightedPath={highlightedPath}
+            className="max-w-[max(16rem,calc(100dvh-14rem))]"
           />
 
           <div className="flex gap-3">
@@ -110,7 +111,7 @@ export default function SolverPage() {
 
         {/* Words list */}
         {showWords && (
-          <div className="w-full lg:w-80 max-h-[70vh] overflow-y-auto">
+          <div className="w-full max-h-[70dvh] overflow-y-auto lg:flex-[1_1_0%]">
             {isLoading ? (
               <p className="text-zinc-400 text-center py-4">Solving...</p>
             ) : (

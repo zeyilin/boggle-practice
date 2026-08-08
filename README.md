@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Boggle Practice
 
-## Getting Started
+A solo Boggle practice PWA — timed games, an untimed Zen mode, a board solver, and spaced-repetition review of boards you struggled on. Fully client-side and offline-first: word lists ship as static assets and are loaded into a trie inside a Web Worker (which also solves boards off the main thread), and all data lives in IndexedDB.
 
-First, run the development server:
+Built with Next.js (App Router, static export), React, TypeScript, and Tailwind CSS v4. See [SPEC.md](SPEC.md) for the full product spec and [CLAUDE.md](CLAUDE.md) for the developer guide.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # dev server at http://localhost:3000 (service worker disabled)
+npm test             # vitest unit tests
+npm run lint         # eslint
+npm run build        # static export → out/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The normalized word lists in `public/dictionaries/` are checked in. To rebuild them from raw source lists, run `npm run compile-dicts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment — Cloudflare Pages (pages.dev)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The site deploys as a static export to Cloudflare Pages via GitHub integration: every push to `main` builds and deploys automatically, and other branches get preview deployments.
 
-## Learn More
+One-time setup (Cloudflare dashboard):
 
-To learn more about Next.js, take a look at the following resources:
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages**.
+2. **Create application** → **Pages** tab → **Connect to Git**.
+3. Sign in to GitHub and select this repository (install the Cloudflare Pages GitHub App if prompted).
+4. **Begin setup**, then configure:
+   - **Project name**: `boggle-practice` (becomes `boggle-practice.pages.dev`)
+   - **Production branch**: `main`
+   - **Framework preset**: `Next.js (Static HTML Export)` — or `None`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `out`
+5. **Save and Deploy**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Supporting files in this repo:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `.node-version` pins Node 22 for Pages CI builds.
+- `public/_headers` is copied into `out/` and sets Cache-Control rules (`/sw.js` is never cached; hashed `/_next/static/*` assets are immutable).
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No `wrangler.toml` is used — for a Git-integrated Pages project the dashboard settings are the source of truth, and a wrangler file containing `pages_build_output_dir` would silently take over that configuration.

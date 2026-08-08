@@ -19,7 +19,7 @@ export function WordList({ words, gridSize }: WordListProps) {
 
   return (
     <div
-      className="flex flex-col gap-0.5 max-h-64 sm:max-h-96 overflow-y-auto"
+      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto"
       role="list"
       aria-label="Found words"
       aria-live="polite"

@@ -7,17 +7,25 @@ interface WordInputProps {
   onChange: (value: string) => void;
   onSubmit: (word: string) => void;
   disabled: boolean;
+  autoFocus?: boolean;
 }
 
-export function WordInput({ value, onChange, onSubmit, disabled }: WordInputProps) {
+export function WordInput({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  autoFocus = true,
+}: WordInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keep input focused during play
+  // Keep input focused during play — but not on touch devices, where
+  // focusing would pop the on-screen keyboard over the board.
   useEffect(() => {
-    if (!disabled) {
+    if (!disabled && autoFocus) {
       inputRef.current?.focus();
     }
-  }, [disabled]);
+  }, [disabled, autoFocus]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -61,7 +69,7 @@ export function WordInput({ value, onChange, onSubmit, disabled }: WordInputProp
   );
 
   return (
-    <div className="flex gap-2 w-full max-w-sm">
+    <div className="flex gap-2 w-full">
       <input
         ref={inputRef}
         type="text"

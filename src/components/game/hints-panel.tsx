@@ -30,7 +30,7 @@ export function HintsPanel() {
   if (!hintsEnabled) return null;
 
   return (
-    <div className="flex flex-col gap-2 w-full max-w-sm">
+    <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-500 uppercase tracking-wide">
           Hints
@@ -69,11 +69,10 @@ export function HintsPanel() {
         </button>
       </div>
 
-      {lastHint && (
-        <p className="text-sm text-blue-500 dark:text-blue-400">
-          {lastHint.text}
-        </p>
-      )}
+      {/* Line is always reserved so the board doesn't resize when a hint appears */}
+      <p className="min-h-5 text-sm text-blue-500 dark:text-blue-400">
+        {lastHint?.text}
+      </p>
     </div>
   );
 }
