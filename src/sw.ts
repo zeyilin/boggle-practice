@@ -12,6 +12,11 @@ declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
+  precacheOptions: {
+    // /play?mode=classic is the precached /play page (the mode is read
+    // client-side); router requests carry _rsc and never match a page
+    ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^mode$/],
+  },
   skipWaiting: false, // Don't auto-update during games
   clientsClaim: true,
   navigationPreload: false,
