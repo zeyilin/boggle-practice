@@ -8,8 +8,8 @@ export default function PlayPage() {
     <Suspense
       fallback={
         <div className="flex flex-1 items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-zinc-300 border-t-blue-500 rounded-full animate-spin" />
+          <div className="appear-delayed flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-zinc-300 border-t-blue-500 rounded-full animate-spin motion-reduce:animate-none" />
             <p className="text-zinc-400">Loading...</p>
           </div>
         </div>

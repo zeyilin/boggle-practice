@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { scoreWord } from "@/lib/scoring";
 import type { GridSize } from "@/lib/types";
 
@@ -8,7 +9,7 @@ interface WordListProps {
   gridSize: GridSize;
 }
 
-export function WordList({ words, gridSize }: WordListProps) {
+export const WordList = memo(function WordList({ words, gridSize }: WordListProps) {
   if (words.length === 0) {
     return (
       <div className="text-sm text-zinc-400 dark:text-zinc-500 py-4 text-center">
@@ -38,4 +39,4 @@ export function WordList({ words, gridSize }: WordListProps) {
       ))}
     </div>
   );
-}
+});

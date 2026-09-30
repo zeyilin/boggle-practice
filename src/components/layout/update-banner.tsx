@@ -13,12 +13,15 @@ export function UpdateBanner() {
   if (!updateAvailable) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 p-3 rounded-lg bg-blue-500 text-white text-sm shadow-lg flex items-center justify-between">
+    <div
+      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 p-3 rounded-lg bg-blue-500 text-white text-sm shadow-lg flex items-center justify-between"
+      role="status"
+    >
       <span>Update available</span>
       <button
         type="button"
         onClick={skipWaiting}
-        className="px-3 py-1 rounded bg-white text-blue-500 font-medium text-xs"
+        className="min-h-11 px-4 rounded bg-white text-blue-500 font-medium text-sm"
       >
         Refresh
       </button>

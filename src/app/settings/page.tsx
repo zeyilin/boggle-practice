@@ -1,14 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useId } from "react";
 import { useSettingsStore } from "@/stores/settings-store";
 import { DataExport } from "@/components/settings/data-export";
 import { DataImport } from "@/components/settings/data-import";
+import { PageHeader } from "@/components/layout/page-header";
 import type { GridSize, DictionaryName, ThemeSetting, TouchInputMode } from "@/lib/types";
 import { MIN_TIMER_DURATION, MAX_TIMER_DURATION, TIMER_STEP } from "@/lib/constants";
 
 export default function SettingsPage() {
-  const router = useRouter();
   const settings = useSettingsStore();
 
   const formatTime = (s: number) => {
@@ -19,151 +19,134 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col items-center p-6 w-full max-w-md mx-auto">
-      <div className="flex items-center w-full mb-8">
-        <button
-          onClick={() => router.push("/")}
-          className="text-sm text-blue-500 hover:underline"
-        >
-          &larr; Back
-        </button>
-        <h1 className="text-2xl font-bold flex-1 text-center mr-10">
-          Settings
-        </h1>
-      </div>
+      <PageHeader title="Settings" />
 
       <div className="w-full space-y-6">
         {/* Grid Size */}
         <SettingRow label="Grid Size">
-          <div className="flex gap-2">
-            {([4, 5] as GridSize[]).map((size) => (
-              <button
-                key={size}
-                onClick={() => settings.setGridSize(size)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  settings.gridSize === size
-                    ? "bg-blue-500 text-white"
-                    : "bg-zinc-200 dark:bg-zinc-700"
-                }`}
-              >
-                {size}×{size}
-              </button>
-            ))}
-          </div>
+          {(labelId) => (
+            <Segmented<GridSize>
+              labelId={labelId}
+              options={[4, 5]}
+              value={settings.gridSize}
+              onChange={settings.setGridSize}
+              format={(size) => `${size}×${size}`}
+            />
+          )}
         </SettingRow>
 
         {/* Dictionary */}
         <SettingRow label="Dictionary">
-          <div className="flex gap-2">
-            {(["twl06", "sowpods"] as DictionaryName[]).map((dict) => (
-              <button
-                key={dict}
-                onClick={() => settings.setDictionary(dict)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  settings.dictionary === dict
-                    ? "bg-blue-500 text-white"
-                    : "bg-zinc-200 dark:bg-zinc-700"
-                }`}
-              >
-                {dict.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          {(labelId) => (
+            <Segmented<DictionaryName>
+              labelId={labelId}
+              options={["twl06", "sowpods"]}
+              value={settings.dictionary}
+              onChange={settings.setDictionary}
+              format={(dict) => dict.toUpperCase()}
+            />
+          )}
         </SettingRow>
 
         {/* Timer Duration */}
         <SettingRow label="Timer Duration">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                settings.setTimerDuration(
-                  Math.max(MIN_TIMER_DURATION, settings.timerDuration - TIMER_STEP),
-                )
-              }
-              className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-lg font-bold"
-            >
-              −
-            </button>
-            <span className="text-lg font-mono w-12 text-center">
-              {formatTime(settings.timerDuration)}
-            </span>
-            <button
-              onClick={() =>
-                settings.setTimerDuration(
-                  Math.min(MAX_TIMER_DURATION, settings.timerDuration + TIMER_STEP),
-                )
-              }
-              className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-lg font-bold"
-            >
-              +
-            </button>
-          </div>
+          {(labelId) => (
+            <div className="flex items-center gap-2" role="group" aria-labelledby={labelId}>
+              <button
+                type="button"
+                onClick={() =>
+                  settings.setTimerDuration(
+                    Math.max(MIN_TIMER_DURATION, settings.timerDuration - TIMER_STEP),
+                  )
+                }
+                disabled={settings.timerDuration <= MIN_TIMER_DURATION}
+                aria-label="Decrease timer by 30 seconds"
+                className="h-11 w-11 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-lg font-bold disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="text-lg font-mono w-12 text-center" aria-live="polite">
+                {formatTime(settings.timerDuration)}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  settings.setTimerDuration(
+                    Math.min(MAX_TIMER_DURATION, settings.timerDuration + TIMER_STEP),
+                  )
+                }
+                disabled={settings.timerDuration >= MAX_TIMER_DURATION}
+                aria-label="Increase timer by 30 seconds"
+                className="h-11 w-11 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-lg font-bold disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+          )}
         </SettingRow>
 
         {/* Hints */}
         <SettingRow label="Hints">
-          <Toggle
-            value={settings.hintsEnabled}
-            onChange={settings.setHintsEnabled}
-          />
+          {(labelId) => (
+            <Toggle
+              labelId={labelId}
+              value={settings.hintsEnabled}
+              onChange={settings.setHintsEnabled}
+            />
+          )}
         </SettingRow>
 
         {/* Sound */}
         <SettingRow label="Sound Effects">
-          <Toggle
-            value={settings.soundEnabled}
-            onChange={settings.setSoundEnabled}
-          />
+          {(labelId) => (
+            <Toggle
+              labelId={labelId}
+              value={settings.soundEnabled}
+              onChange={settings.setSoundEnabled}
+            />
+          )}
         </SettingRow>
 
         {/* Haptic */}
         <SettingRow label="Haptic Feedback">
-          <Toggle
-            value={settings.hapticEnabled}
-            onChange={settings.setHapticEnabled}
-          />
+          {(labelId) => (
+            <Toggle
+              labelId={labelId}
+              value={settings.hapticEnabled}
+              onChange={settings.setHapticEnabled}
+            />
+          )}
         </SettingRow>
 
         {/* Theme */}
         <SettingRow label="Theme">
-          <div className="flex gap-2">
-            {(["light", "dark", "system"] as ThemeSetting[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => settings.setTheme(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${
-                  settings.theme === t
-                    ? "bg-blue-500 text-white"
-                    : "bg-zinc-200 dark:bg-zinc-700"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {(labelId) => (
+            <Segmented<ThemeSetting>
+              labelId={labelId}
+              options={["light", "dark", "system"]}
+              value={settings.theme}
+              onChange={settings.setTheme}
+              format={(t) => t[0].toUpperCase() + t.slice(1)}
+            />
+          )}
         </SettingRow>
 
         {/* Touch Input Mode */}
         <SettingRow label="Touch Input">
-          <div className="flex gap-2">
-            {(["swipe", "tap", "both"] as TouchInputMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => settings.setTouchInputMode(m)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${
-                  settings.touchInputMode === m
-                    ? "bg-blue-500 text-white"
-                    : "bg-zinc-200 dark:bg-zinc-700"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+          {(labelId) => (
+            <Segmented<TouchInputMode>
+              labelId={labelId}
+              options={["swipe", "tap", "both"]}
+              value={settings.touchInputMode}
+              onChange={settings.setTouchInputMode}
+              format={(m) => m[0].toUpperCase() + m.slice(1)}
+            />
+          )}
         </SettingRow>
 
         {/* Data Management */}
         <div className="pt-4 border-t border-zinc-200 dark:border-zinc-700 space-y-3">
-          <span className="text-sm font-medium">Data Management</span>
+          <h2 className="text-sm font-medium">Data Management</h2>
           <DataExport />
           <DataImport />
         </div>
@@ -177,38 +160,84 @@ function SettingRow({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: (labelId: string) => React.ReactNode;
+}) {
+  const labelId = useId();
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span id={labelId} className="text-sm font-medium">
+        {label}
+      </span>
+      {children(labelId)}
+    </div>
+  );
+}
+
+function Segmented<T extends string | number>({
+  labelId,
+  options,
+  value,
+  onChange,
+  format,
+}: {
+  labelId: string;
+  options: T[];
+  value: T;
+  onChange: (v: T) => void;
+  format: (v: T) => string;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
+    <div className="flex gap-2" role="group" aria-labelledby={labelId}>
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => onChange(option)}
+          aria-pressed={value === option}
+          className={`min-h-11 px-3 rounded-lg text-sm font-medium ${
+            value === option
+              ? "bg-blue-500 text-white"
+              : "bg-zinc-200 dark:bg-zinc-700"
+          }`}
+        >
+          {format(option)}
+        </button>
+      ))}
     </div>
   );
 }
 
 function Toggle({
+  labelId,
   value,
   onChange,
 }: {
+  labelId: string;
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
+  // The visible switch is 24px tall; the button around it is the full
+  // 44px touch target
   return (
     <button
       type="button"
       onClick={() => onChange(!value)}
       role="switch"
       aria-checked={value}
-      className={`relative w-11 h-6 rounded-full transition-colors ${
-        value ? "bg-blue-500" : "bg-zinc-300 dark:bg-zinc-600"
-      }`}
+      aria-labelledby={labelId}
+      className="flex h-11 items-center"
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-          value ? "translate-x-5" : ""
+        className={`relative block w-11 h-6 rounded-full transition-colors motion-reduce:transition-none ${
+          value ? "bg-blue-500" : "bg-zinc-300 dark:bg-zinc-600"
         }`}
-      />
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform motion-reduce:transition-none ${
+            value ? "translate-x-5" : ""
+          }`}
+        />
+      </span>
     </button>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { scoreWord } from "@/lib/scoring";
 import type { GridSize } from "@/lib/types";
 
@@ -9,10 +10,11 @@ interface WordChipsProps {
 }
 
 // Compact horizontal strip of found words for small screens, newest first.
-// Fixed height so the board above it never shifts as words come in.
-export function WordChips({ words, gridSize }: WordChipsProps) {
+// Fixed height so the board above it never shifts as words come in (and
+// contained, so a new chip doesn't re-lay out the rest of the screen).
+export const WordChips = memo(function WordChips({ words, gridSize }: WordChipsProps) {
   return (
-    <div className="flex h-9 w-full shrink-0 items-center gap-1.5">
+    <div className="flex h-9 w-full shrink-0 items-center gap-1.5 [contain:strict]">
       <span
         className="shrink-0 rounded-full bg-zinc-200 px-2 py-1 text-xs font-semibold tabular-nums dark:bg-zinc-700"
         aria-label={`${words.length} words found`}
@@ -46,4 +48,4 @@ export function WordChips({ words, gridSize }: WordChipsProps) {
       )}
     </div>
   );
-}
+});

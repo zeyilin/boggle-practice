@@ -56,11 +56,13 @@ export function DataImport() {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="px-4 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-sm font-medium hover:bg-zinc-300 dark:hover:bg-zinc-600"
+          className="min-h-11 px-4 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-sm font-medium hover:bg-zinc-300 dark:hover:bg-zinc-600"
         >
           Import Data
         </button>
-        {status && <span className="text-xs text-blue-500">{status}</span>}
+        <span className="text-xs text-blue-500" role="status">
+          {status}
+        </span>
       </div>
 
       <input
@@ -81,7 +83,7 @@ export function DataImport() {
             <button
               type="button"
               onClick={confirmImport}
-              className="px-3 py-1 text-sm rounded bg-yellow-500 text-white font-medium"
+              className="min-h-11 px-4 text-sm rounded-lg bg-yellow-500 text-white font-medium"
             >
               Yes, import
             </button>
@@ -91,7 +93,7 @@ export function DataImport() {
                 setConfirming(false);
                 setPendingData(null);
               }}
-              className="px-3 py-1 text-sm rounded bg-zinc-200 dark:bg-zinc-700"
+              className="min-h-11 px-4 text-sm rounded-lg bg-zinc-200 dark:bg-zinc-700"
             >
               Cancel
             </button>

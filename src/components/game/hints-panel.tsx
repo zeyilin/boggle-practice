@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useGameStore } from "@/stores/game-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { generateHint, type HintResult } from "@/lib/hints";
@@ -9,7 +10,16 @@ import type { HintType } from "@/lib/types";
 
 export function HintsPanel() {
   const { wordsFound, wordsAvailable, gridSize, gameMode, hintsUsed, useHint: recordHint } =
-    useGameStore();
+    useGameStore(
+      useShallow((s) => ({
+        wordsFound: s.wordsFound,
+        wordsAvailable: s.wordsAvailable,
+        gridSize: s.gridSize,
+        gameMode: s.gameMode,
+        hintsUsed: s.hintsUsed,
+        useHint: s.useHint,
+      })),
+    );
   const hintsEnabled = useSettingsStore((s) => s.hintsEnabled);
   const [lastHint, setLastHint] = useState<HintResult | null>(null);
 
@@ -32,7 +42,7 @@ export function HintsPanel() {
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-500 uppercase tracking-wide">
+        <span id="hints-label" className="text-xs text-zinc-500 uppercase tracking-wide">
           Hints
         </span>
         {maxHints !== Infinity && (
@@ -42,12 +52,12 @@ export function HintsPanel() {
         )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2" role="group" aria-labelledby="hints-label">
         <button
           type="button"
           onClick={() => requestHint("count-by-length")}
           disabled={!canUseHint}
-          className="px-3 py-1.5 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
+          className="px-3 py-1.5 pointer-coarse:min-h-11 pointer-coarse:flex-1 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
         >
           Count
         </button>
@@ -55,7 +65,7 @@ export function HintsPanel() {
           type="button"
           onClick={() => requestHint("first-letter")}
           disabled={!canUseHint}
-          className="px-3 py-1.5 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
+          className="px-3 py-1.5 pointer-coarse:min-h-11 pointer-coarse:flex-1 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
         >
           Letters
         </button>
@@ -63,14 +73,14 @@ export function HintsPanel() {
           type="button"
           onClick={() => requestHint("reveal-word")}
           disabled={!canUseHint}
-          className="px-3 py-1.5 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
+          className="px-3 py-1.5 pointer-coarse:min-h-11 pointer-coarse:flex-1 text-xs rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50"
         >
           Reveal
         </button>
       </div>
 
       {/* Line is always reserved so the board doesn't resize when a hint appears */}
-      <p className="min-h-5 text-sm text-blue-500 dark:text-blue-400">
+      <p className="min-h-5 text-sm text-blue-500 dark:text-blue-400" aria-live="polite">
         {lastHint?.text}
       </p>
     </div>

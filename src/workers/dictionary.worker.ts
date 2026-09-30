@@ -62,12 +62,30 @@ async function buildFromWordList(dictionary: string): Promise<Trie> {
   return buildTrie(words);
 }
 
+// Loads by name, so a load started at boot is reused by the "load" request
+const loads = new Map<string, Promise<Trie>>();
+
+function startLoad(dictionary: string): Promise<Trie> {
+  let load = loads.get(dictionary);
+  if (!load) {
+    load =
+      typeof DecompressionStream === "undefined"
+        ? buildFromWordList(dictionary)
+        : loadDawg(dictionary);
+    // A failed load can be retried
+    load.catch(() => loads.delete(dictionary));
+    loads.set(dictionary, load);
+  }
+  return load;
+}
+
+// The main thread names the worker after the dictionary it expects to need
+// (see DictionaryAPI.warmUp), so fetching starts before settings hydrate
+if (self.name) startLoad(self.name);
+
 async function loadDictionary(dictionary: string) {
   try {
-    trie =
-      typeof DecompressionStream === "undefined"
-        ? await buildFromWordList(dictionary)
-        : await loadDawg(dictionary);
+    trie = await startLoad(dictionary);
     respond({ type: "loaded", wordCount: trie.wordCount });
   } catch (e) {
     respond({
@@ -77,12 +95,10 @@ async function loadDictionary(dictionary: string) {
   }
 }
 
-self.onmessage = (event: MessageEvent<WorkerRequest>) => {
-  const msg = event.data;
-
+async function handle(msg: WorkerRequest) {
   switch (msg.type) {
     case "load":
-      loadDictionary(msg.dictionary);
+      await loadDictionary(msg.dictionary);
       break;
 
     case "solve":
@@ -110,4 +126,22 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       respond({ type: "isPrefix", result: isPrefix(trie, msg.prefix) });
       break;
   }
+}
+
+// The main thread matches each reply to the oldest pending request, so
+// messages are handled strictly in order: a request sent while a load is
+// in flight waits for it instead of being answered first.
+let queue: Promise<void> = Promise.resolve();
+
+self.onmessage = (event: MessageEvent<WorkerRequest>) => {
+  queue = queue
+    .then(() => handle(event.data))
+    // Every request gets exactly one reply, and one failure can't stall
+    // the queue for the requests behind it
+    .catch((e) =>
+      respond({
+        type: "error",
+        error: e instanceof Error ? e.message : String(e),
+      }),
+    );
 };

@@ -17,6 +17,8 @@ interface ReviewStore {
   dueCards: ReviewCard[];
   allCards: ReviewCard[];
   isLoading: boolean;
+  /** The queue has been read from IndexedDB at least once. */
+  hasLoaded: boolean;
 
   loadReviewQueue: (dictionary: DictionaryName) => Promise<void>;
 
@@ -40,10 +42,11 @@ function calculateInterval(discoveryRate: number): number | null {
   return 7; // fallback
 }
 
-export const useReviewStore = create<ReviewStore>((set) => ({
+export const useReviewStore = create<ReviewStore>((set, get) => ({
   dueCards: [],
   allCards: [],
   isLoading: false,
+  hasLoaded: false,
 
   loadReviewQueue: async (dictionary) => {
     set({ isLoading: true });
@@ -51,7 +54,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
       getDueReviewCards(dictionary),
       getAllReviewCards(),
     ]);
-    set({ dueCards, allCards, isLoading: false });
+    set({ dueCards, allCards, isLoading: false, hasLoaded: true });
   },
 
   maybeAddToReview: async (record) => {
@@ -81,6 +84,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
     };
 
     await saveReviewCard(card);
+    await get().loadReviewQueue(card.dictionary);
   },
 
   updateAfterReview: async (cardId, discoveryRate) => {
@@ -103,5 +107,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
       };
       await saveReviewCard(updated);
     }
+    // Refresh what's due (the badge on home, and Play Again in review mode)
+    await get().loadReviewQueue(card.dictionary);
   },
 }));
