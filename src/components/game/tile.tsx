@@ -27,11 +27,16 @@ export function Tile({
   onPointerEnter,
   onPointerUp,
 }: TileProps) {
+  // Tiles fill their grid cell; letter size scales with the board via
+  // container-query units (the Board root is the inline-size container).
+  const letterSize = gridSize === 4 ? "text-[10cqw]" : "text-[8cqw]";
+
   return (
     <button
       type="button"
       className={cn(
-        "aspect-square w-full rounded-lg font-bold text-xl sm:text-2xl select-none touch-none",
+        "h-full w-full rounded-[2cqw] font-bold select-none touch-none",
+        letterSize,
         "flex items-center justify-center transition-all duration-100",
         "border-2",
         isSelected

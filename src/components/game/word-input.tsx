@@ -1,65 +1,103 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 interface WordInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (word: string) => void;
   disabled: boolean;
+  autoFocus?: boolean;
 }
 
-export function WordInput({ value, onChange, onSubmit, disabled }: WordInputProps) {
-  // Handle physical keyboard input via document listener
+export function WordInput({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  autoFocus = true,
+}: WordInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keep input focused during play — but not on touch devices, where
+  // focusing would pop the on-screen keyboard over the board.
   useEffect(() => {
-    if (disabled) return;
+    if (!disabled && autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [disabled, autoFocus]);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is focused on another interactive element
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-
-      if (e.key === "Enter") {
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && value.trim()) {
         e.preventDefault();
-        const trimmed = value.trim();
-        if (trimmed) onSubmit(trimmed);
+        onSubmit(value.trim());
       } else if (e.key === "Escape") {
         e.preventDefault();
         onChange("");
-      } else if (e.key === "Backspace") {
-        e.preventDefault();
-        if (value.length >= 2 && value.slice(-2) === "QU") {
+      }
+    },
+    [value, onChange, onSubmit],
+  );
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      let val = e.target.value.toUpperCase();
+      // Auto-expand Q to QU (Boggle Qu tile rule)
+      if (val.endsWith("Q") && !val.endsWith("QU")) {
+        val = val + "U";
+      }
+      // Only allow letters
+      val = val.replace(/[^A-Z]/g, "");
+      onChange(val);
+    },
+    [onChange],
+  );
+
+  const handleBackspace = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Handle QU deletion — delete both Q and U together
+      if (e.key === "Backspace" && value.length >= 2) {
+        const lastTwo = value.slice(-2);
+        if (lastTwo === "QU") {
+          e.preventDefault();
           onChange(value.slice(0, -2));
-        } else if (value.length > 0) {
-          onChange(value.slice(0, -1));
-        }
-      } else if (/^[a-zA-Z]$/.test(e.key)) {
-        e.preventDefault();
-        const letter = e.key.toUpperCase();
-        if (letter === "Q") {
-          onChange(value + "QU");
-        } else {
-          onChange(value + letter);
         }
       }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, value, onChange, onSubmit]);
+    },
+    [value, onChange],
+  );
 
   return (
-    <div className="flex items-center gap-2 w-full max-w-[500px] px-2">
-      <div
-        className="flex-1 h-11 sm:h-12 px-4 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-lg font-mono uppercase tracking-wider flex items-center justify-center min-w-0"
-        aria-label="Current word"
+    <div className="flex gap-2 w-full">
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={handleChange}
+        onKeyDown={(e) => {
+          handleBackspace(e);
+          handleKeyDown(e);
+        }}
+        disabled={disabled}
+        placeholder="Type a word..."
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        className="flex-1 h-12 px-4 rounded-lg bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600 text-lg font-mono uppercase tracking-wider focus:outline-none focus:border-blue-500 disabled:opacity-50"
+        aria-label="Word input"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          if (value.trim()) onSubmit(value.trim());
+        }}
+        disabled={disabled || !value.trim()}
+        className="h-12 px-5 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {value ? (
-          <span className="text-zinc-900 dark:text-white font-bold">{value}</span>
-        ) : (
-          <span className="text-zinc-400 dark:text-zinc-500 text-sm">TYPE A WORD...</span>
-        )}
-      </div>
+        Submit
+      </button>
     </div>
   );
 }

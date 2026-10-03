@@ -9,12 +9,13 @@ import { Board } from "./board";
 import { Timer } from "./timer";
 import { WordInput } from "./word-input";
 import { WordList } from "./word-list";
+import { WordChips } from "./word-chips";
 import { ScoreDisplay } from "./score-display";
 import { Feedback } from "./feedback";
-import { CustomKeyboard } from "./custom-keyboard";
 import { HintsPanel } from "./hints-panel";
 import { ResultsScreen } from "../review/results-screen";
 import { AUTO_SAVE_INTERVAL } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { Position } from "@/lib/types";
 
 export function GameShell() {
@@ -41,6 +42,10 @@ export function GameShell() {
   const touchInputMode = useSettingsStore((s) => s.touchInputMode);
   const isTouchDevice = typeof window !== "undefined" &&
     ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  // Touchscreen laptops still play with a keyboard: only suppress input
+  // autofocus on touch-primary devices (where focus pops the OS keyboard).
+  const prefersKeyboard = typeof window !== "undefined" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -119,21 +124,30 @@ export function GameShell() {
     swipe.currentWord.length > 0 ? swipe.currentWord : tap.currentWord;
   const displayWord = touchWord || currentWord;
 
-  // Swipe/drag handlers always enabled (works on both mouse and touch)
-  // Tap mode only on touch devices with tap/both setting
+  // Determine which handlers to pass to Board based on input mode.
+  // Drag-to-trace works with any pointer (finger or mouse), so it isn't
+  // gated on touch; tap-to-spell stays a touch affordance.
+  const useSwipe =
+    touchInputMode === "swipe" || touchInputMode === "both";
   const useTap =
     isTouchDevice && (touchInputMode === "tap" || touchInputMode === "both");
 
-  // Always pass swipe handlers so drag-and-release works on all devices
-  const boardHandlers = {
-    onPointerDown: swipe.handlers.onPointerDown,
-    onPointerEnter: swipe.handlers.onPointerEnter,
-    onPointerUp: swipe.handlers.onPointerUp,
-  };
+  // For "both" mode, swipe handlers take priority (tap uses onPointerDown only)
+  const boardHandlers = useSwipe
+    ? {
+        onPointerDown: swipe.handlers.onPointerDown,
+        onPointerEnter: swipe.handlers.onPointerEnter,
+        onPointerUp: swipe.handlers.onPointerUp,
+      }
+    : useTap
+      ? {
+          onPointerDown: tap.handlers.onPointerDown,
+        }
+      : {};
 
-  // Compute disabled tiles for tap-only mode
+  // Compute disabled tiles for tap mode
   const disabledTiles =
-    useTap && touchInputMode === "tap"
+    useTap && !useSwipe
       ? (() => {
           const valid = tap.validTiles;
           const disabled = new Set<string>();
@@ -148,95 +162,100 @@ export function GameShell() {
       : undefined;
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto h-[100dvh] overflow-hidden px-3 py-2 gap-1">
-      {/* Header */}
-      <div className="flex items-center justify-between w-full max-w-sm shrink-0">
-        <Timer elapsedTime={elapsedTime} timerDuration={timerDuration} />
-        <ScoreDisplay score={score} wordsFound={wordsFound.length} />
+    <div className="flex h-dvh w-full flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))] lg:mx-auto lg:max-w-[1800px] lg:flex-row lg:gap-8 lg:p-6 lg:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      {/* Board column: header, board stage, mobile chip strip */}
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-3 lg:flex-[2_1_0%]">
+        {/* Header: timer | current word + feedback | score */}
+        <div className="flex w-full shrink-0 items-center justify-between gap-4">
+          <Timer elapsedTime={elapsedTime} timerDuration={timerDuration} />
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+            {displayWord && (
+              <span className="truncate font-mono text-xl font-bold tracking-widest sm:text-2xl">
+                {displayWord}
+              </span>
+            )}
+            <Feedback result={lastSubmitResult} />
+          </div>
+          <ScoreDisplay score={score} wordsFound={wordsFound.length} />
+        </div>
+
+        {/* Board stage: a size container so the board fills whatever space
+            remains, constrained by both width and height, on any resize */}
+        {/* Top-aligned on phones so slack collects in one place (above the
+            input) instead of splitting into gaps around the board */}
+        <div className="min-h-0 w-full flex-1 [container-type:size]">
+          <div className="flex h-full w-full items-start justify-center lg:items-center">
+            <Board
+              board={board}
+              gridSize={gridSize}
+              selectedPath={touchPath}
+              disabledTiles={disabledTiles}
+              className="w-[min(100cqw,100cqh)]"
+              {...boardHandlers}
+            />
+          </div>
+        </div>
+
+        {/* Found words as a chip strip on small screens */}
+        <div className="lg:hidden">
+          <WordChips words={wordsFound} gridSize={gridSize} />
+        </div>
       </div>
 
-      {/* Current word display + feedback */}
-      <div className="h-7 flex items-center gap-3 shrink-0">
-        {displayWord && (
-          <span className="text-lg font-mono font-bold tracking-widest">
-            {displayWord}
-          </span>
-        )}
-        <Feedback result={lastSubmitResult} />
-      </div>
-
-      {/* Board area — grows to fill available space */}
-      <div className="flex flex-col lg:flex-row gap-4 items-center lg:items-start w-full justify-center flex-1 min-h-0">
-        <Board
-          board={board}
-          gridSize={gridSize}
-          selectedPath={touchPath}
-          disabledTiles={disabledTiles}
-          {...boardHandlers}
-        />
-
-        {/* Word list: desktop sidebar only */}
-        <div className="hidden lg:block lg:w-64 overflow-y-auto max-h-full">
-          <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
+      {/* Sidebar: word list (desktop), hints, tap controls, input */}
+      <aside className="flex w-full shrink-0 flex-col gap-3 lg:min-h-0 lg:w-auto lg:flex-[1_1_0%]">
+        <div className="hidden min-h-0 flex-1 flex-col lg:flex">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Found Words ({wordsFound.length})
           </h2>
           <WordList words={wordsFound} gridSize={gridSize} />
         </div>
-      </div>
 
-      {/* Hints */}
-      <HintsPanel />
+        <HintsPanel />
 
-      {/* Touch controls for tap mode */}
-      {useTap && tap.currentPath.length > 0 && (
-        <div className="flex gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={tap.clear}
-            className="h-9 px-4 rounded-lg bg-zinc-200 dark:bg-zinc-700 font-medium text-sm"
+        {/* Touch controls for tap mode — row space is always reserved so the
+            board above never resizes mid-word when the buttons appear */}
+        {useTap && (
+          <div
+            className={cn(
+              "flex h-12 shrink-0 gap-3",
+              tap.currentPath.length === 0 && "invisible",
+            )}
           >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={tap.submit}
-            className="h-9 px-4 rounded-lg bg-blue-500 text-white font-medium text-sm"
-          >
-            Submit
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={tap.clear}
+              className="h-12 flex-1 rounded-lg bg-zinc-200 font-medium dark:bg-zinc-700"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={tap.submit}
+              className="h-12 flex-1 rounded-lg bg-blue-500 font-medium text-white"
+            >
+              Submit
+            </button>
+          </div>
+        )}
 
-      {/* Word display + custom keyboard — pinned to bottom, never scrolls off */}
-      <div className="flex flex-col items-center gap-1 w-full shrink-0">
+        {/* Keyboard input */}
         <WordInput
           value={currentWord}
           onChange={setCurrentWord}
           onSubmit={handleKeyboardSubmit}
           disabled={phase !== "playing"}
+          autoFocus={prefersKeyboard}
         />
 
-        <CustomKeyboard
-          value={currentWord}
-          onChange={setCurrentWord}
-          onSubmit={handleKeyboardSubmit}
-          disabled={phase !== "playing"}
-        />
-
-        <div className="flex items-center gap-4 pb-1">
-          <button
-            type="button"
-            onClick={handleDone}
-            className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
-          >
-            {gameMode === "zen" ? "I'm done" : "End early"}
-          </button>
-          {/* Mobile found words toggle */}
-          <span className="text-xs text-zinc-400 dark:text-zinc-500 lg:hidden">
-            {wordsFound.length} words found
-          </span>
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={handleDone}
+          className="text-sm text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
+        >
+          {gameMode === "zen" ? "I'm done" : "End early"}
+        </button>
+      </aside>
     </div>
   );
 }
