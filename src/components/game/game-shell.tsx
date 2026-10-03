@@ -23,10 +23,10 @@ import { HintsPanel } from "./hints-panel";
 import { ResultsScreen } from "../review/results-screen";
 import { AUTO_SAVE_INTERVAL } from "@/lib/constants";
 import {
+  applyTypedChange,
   canExtendPath,
   deleteTypedLetter,
   findWordPath,
-  normalizeTypedWord,
 } from "@/lib/word-path";
 import { cn } from "@/lib/utils";
 import type { Position } from "@/lib/types";
@@ -136,39 +136,48 @@ export function GameShell() {
     return dimmed;
   }, [dimPending, input.path, gridSize]);
 
-  const { activate } = input;
+  // The hook's actions are stable; the object holding them isn't
+  const { activate, submit, clear, undo } = input;
   const handleTileActivate = useCallback(
     (r: number, c: number, key: "Enter" | " ") => activate(r, c, key === "Enter"),
     [activate],
   );
 
   const submitCurrent = useCallback(() => {
-    if (input.submit()) return;
+    if (submit()) return;
     if (currentWord) submitWord(currentWord);
-  }, [input, currentWord, submitWord]);
+  }, [submit, currentWord, submitWord]);
 
   const clearCurrent = useCallback(() => {
-    input.clear();
+    clear();
     setCurrentWord("");
-  }, [input, setCurrentWord]);
+  }, [clear, setCurrentWord]);
 
   const handleBackspace = useCallback((): boolean => {
-    if (input.undo()) return true;
+    if (undo()) return true;
     if (currentWord.endsWith("QU")) {
       setCurrentWord(deleteTypedLetter(currentWord));
       return true;
     }
     return false;
-  }, [input, currentWord, setCurrentWord]);
+  }, [undo, currentWord, setCurrentWord]);
 
+  // The value the last edit auto-expanded Q→QU into (see applyTypedChange)
+  const autoExpandedRef = useRef<string | null>(null);
   const handleTyped = useCallback(
-    (value: string) => {
+    (raw: string) => {
       // Typing takes over from a traced word (the field shows it, so
       // typing after tracing C-A-T and pressing S gives "CATS")
-      input.clear();
+      const { value, autoExpanded } = applyTypedChange(
+        displayWord,
+        raw,
+        autoExpandedRef.current,
+      );
+      autoExpandedRef.current = autoExpanded;
+      clear();
       setCurrentWord(value);
     },
-    [input, setCurrentWord],
+    [displayWord, clear, setCurrentWord],
   );
 
   // Keyboard play works wherever focus is (after clicking a hint or a
@@ -183,7 +192,7 @@ export function GameShell() {
       if (/^[a-z]$/i.test(e.key)) {
         e.preventDefault();
         // Continues the word on screen, traced or typed (C-A-T then S → CATS)
-        handleTyped(normalizeTypedWord(displayWord + e.key));
+        handleTyped(displayWord + e.key);
         inputRef.current?.focus({ preventScroll: true });
       } else if (e.key === "Backspace") {
         e.preventDefault();

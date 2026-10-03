@@ -72,6 +72,8 @@ export const Tile = memo(function Tile({
       aria-pressed={isSelected}
       aria-disabled={isDisabled || undefined}
       onPointerDown={(e) => {
+        // Main button / touch / pen only (a right-click opens the menu)
+        if (e.button !== 0) return;
         // Keep focus (and the keyboard) where it is, and stop text selection
         e.preventDefault();
         onPointerDown?.(row, col, e.pointerId);

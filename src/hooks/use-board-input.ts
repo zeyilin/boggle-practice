@@ -67,6 +67,10 @@ export function useBoardInput(options: UseBoardInputOptions) {
   const submit = useCallback((): boolean => {
     const current = pathRef.current;
     if (current.length === 0) return false;
+    // Ends any press in progress (e.g. Submit tapped with another finger),
+    // so its release can't bring the submitted word back
+    gestureRef.current = null;
+    setTracing(false);
     setPath([]);
     optionsRef.current.onSubmit(
       pathToWord(optionsRef.current.board, current),
@@ -215,6 +219,13 @@ export function useBoardInput(options: UseBoardInputOptions) {
     const handlePointerMove = (e: PointerEvent) => {
       const gesture = gestureRef.current;
       if (!gesture || e.pointerId !== gesture.pointerId) return;
+
+      // The mouse button was released where we didn't see it (outside the
+      // window, or a menu took the event): treat it as the release
+      if (e.pointerType === "mouse" && e.buttons === 0) {
+        pointerUp();
+        return;
+      }
 
       const tile = document
         .elementFromPoint(e.clientX, e.clientY)

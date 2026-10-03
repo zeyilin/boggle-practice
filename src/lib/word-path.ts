@@ -73,12 +73,28 @@ export function findWordPath(
 }
 
 /**
- * Normalize typed input: uppercase letters only, and a trailing Q expands
- * to QU (the Qu tile always represents both letters).
+ * Apply one edit to the typed word: uppercase letters only, and a trailing
+ * Q expands to QU (the Qu tile always represents both letters).
+ *
+ * `autoExpanded` is the value the previous edit produced if that edit
+ * added the U itself (and is returned likewise for the next call). A U
+ * typed straight after it is swallowed, so typing Q-U-I-T naturally gives
+ * QUIT, not QUUIT — while S-Q-U-U-S-H still gives SQUUSH.
  */
-export function normalizeTypedWord(raw: string): string {
+export function applyTypedChange(
+  prev: string,
+  raw: string,
+  autoExpanded: string | null,
+): { value: string; autoExpanded: string | null } {
   const letters = raw.toUpperCase().replace(/[^A-Z]/g, "");
-  return letters.endsWith("Q") ? letters + "U" : letters;
+  if (autoExpanded !== null && prev === autoExpanded && letters === prev + "U") {
+    return { value: prev, autoExpanded: null };
+  }
+  if (letters.endsWith("Q")) {
+    const value = letters + "U";
+    return { value, autoExpanded: value };
+  }
+  return { value: letters, autoExpanded: null };
 }
 
 /**

@@ -16,10 +16,15 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
   // Precache all of public/ except the plain-text word lists (1.7 MB each,
-  // only fetched by the no-DecompressionStream fallback); the .dawg.gz
-  // dictionaries stay precached for offline play. glob ignores "!" negations,
-  // hence the extglob split.
-  globPublicPatterns: ["*", "!(dictionaries)/**", "dictionaries/**/!(*.txt)"],
+  // only fetched by the no-DecompressionStream fallback) and _headers
+  // (Cloudflare Pages config, not served: a 404 would fail the whole SW
+  // install); the .dawg.gz dictionaries stay precached for offline play.
+  // glob ignores "!" negations, hence the extglob split.
+  globPublicPatterns: [
+    "!(_headers)",
+    "!(dictionaries)/**",
+    "dictionaries/**/!(*.txt)",
+  ],
   // (Added by a transform: setting additionalPrecacheEntries would replace
   // the public/ scan above instead of adding to it.)
   manifestTransforms: [

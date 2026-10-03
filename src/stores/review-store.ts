@@ -12,6 +12,15 @@ import {
   REVIEW_GRADUATE_THRESHOLD,
 } from "@/lib/constants";
 import { v4 as uuidv4 } from "uuid";
+import { useSettingsStore } from "./settings-store";
+
+// Refresh what's due (the badge on home, and Play Again in review mode)
+// for the dictionary being played, which may differ from a card's
+function reloadQueue() {
+  return useReviewStore
+    .getState()
+    .loadReviewQueue(useSettingsStore.getState().dictionary);
+}
 
 interface ReviewStore {
   dueCards: ReviewCard[];
@@ -42,7 +51,7 @@ function calculateInterval(discoveryRate: number): number | null {
   return 7; // fallback
 }
 
-export const useReviewStore = create<ReviewStore>((set, get) => ({
+export const useReviewStore = create<ReviewStore>((set) => ({
   dueCards: [],
   allCards: [],
   isLoading: false,
@@ -84,7 +93,7 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
     };
 
     await saveReviewCard(card);
-    await get().loadReviewQueue(card.dictionary);
+    await reloadQueue();
   },
 
   updateAfterReview: async (cardId, discoveryRate) => {
@@ -107,7 +116,6 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
       };
       await saveReviewCard(updated);
     }
-    // Refresh what's due (the badge on home, and Play Again in review mode)
-    await get().loadReviewQueue(card.dictionary);
+    await reloadQueue();
   },
 }));

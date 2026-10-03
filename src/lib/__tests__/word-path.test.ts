@@ -3,7 +3,7 @@ import {
   canExtendPath,
   deleteTypedLetter,
   findWordPath,
-  normalizeTypedWord,
+  applyTypedChange,
   pathToWord,
   tileLetters,
 } from "../word-path";
@@ -152,19 +152,38 @@ describe("findWordPath", () => {
   });
 });
 
-describe("normalizeTypedWord", () => {
+// Type `keys` one at a time, the way the word field and keyboard do
+function typeKeys(keys: string): string {
+  let value = "";
+  let autoExpanded: string | null = null;
+  for (const key of keys) {
+    ({ value, autoExpanded } = applyTypedChange(value, value + key, autoExpanded));
+  }
+  return value;
+}
+
+describe("applyTypedChange", () => {
   it("uppercases and strips non-letters", () => {
-    expect(normalizeTypedWord("ca t1!")).toBe("CAT");
+    expect(applyTypedChange("", "ca t1!", null).value).toBe("CAT");
   });
 
   it("expands a trailing Q to QU", () => {
-    expect(normalizeTypedWord("q")).toBe("QU");
-    expect(normalizeTypedWord("SQ")).toBe("SQU");
+    expect(typeKeys("q")).toBe("QU");
+    expect(typeKeys("sq")).toBe("SQU");
   });
 
-  it("leaves an existing QU alone", () => {
-    expect(normalizeTypedWord("QU")).toBe("QU");
-    expect(normalizeTypedWord("QUIT")).toBe("QUIT");
+  it("swallows the U typed right after an expanded Q", () => {
+    expect(typeKeys("quit")).toBe("QUIT");
+    expect(typeKeys("qua")).toBe("QUA");
+  });
+
+  it("still allows a real U after the Qu tile", () => {
+    // SQUUSH = S + Qu tile + U + S + H
+    expect(typeKeys("squush")).toBe("SQUUSH");
+  });
+
+  it("doesn't swallow a U after a QU that was pasted or edited in", () => {
+    expect(applyTypedChange("QU", "QUU", null).value).toBe("QUU");
   });
 });
 

@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { normalizeTypedWord } from "@/lib/word-path";
 
 interface WordInputProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   /** The current word: typed text, or the word traced on the board. */
   value: string;
-  onChange: (value: string) => void;
+  /** The field's raw text after an edit (the shell normalizes it). */
+  onChange: (raw: string) => void;
   onSubmit: () => void;
   onClear: () => void;
   /** Backspace with the caret at the end; return true if handled
@@ -78,7 +78,7 @@ export function WordInput({
         ref={inputRef}
         type="text"
         value={value}
-        onChange={(e) => onChange(normalizeTypedWord(e.target.value))}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder="Type a word..."

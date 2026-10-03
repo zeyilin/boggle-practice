@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 import { useGameStore } from "@/stores/game-store";
 import { useDictionaryStore } from "@/stores/dictionary-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -34,18 +35,43 @@ export function PlayContent() {
   // every timer tick would re-render everything below it
   const phase = useGameStore((s) => s.phase);
   const startGame = useGameStore((s) => s.startGame);
-  const { isLoaded, error, loadDictionary } = useDictionaryStore();
-  const settings = useSettingsStore();
-  const { dueCards, hasLoaded: reviewLoaded } = useReviewStore();
+  const { isLoaded, error, loadDictionary } = useDictionaryStore(
+    useShallow((s) => ({
+      isLoaded: s.isLoaded,
+      error: s.error,
+      loadDictionary: s.loadDictionary,
+    })),
+  );
+  const settings = useSettingsStore(
+    useShallow((s) => ({
+      gridSize: s.gridSize,
+      dictionary: s.dictionary,
+      timerDuration: s.timerDuration,
+    })),
+  );
+  const dueCards = useReviewStore((s) => s.dueCards);
+  const reviewLoaded = useReviewStore((s) => s.hasLoaded);
   const noReviewsDue = mode === "review" && reviewLoaded && dueCards.length === 0;
 
   // One board generation at a time (effects can re-run while it's async)
   const startingRef = useRef(false);
+  // A generation that finishes after leaving the page must not start a game
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   // Wait for the dictionary (loaded app-wide on startup, so a refresh or
   // deep link here works) rather than bouncing to home
   useEffect(() => {
-    if (!isLoaded || phase !== "idle" || startingRef.current) return;
+    if (!isLoaded || phase !== "idle" || startingRef.current || startError) {
+      return;
+    }
     if (mode === "review" && (!reviewLoaded || dueCards.length === 0)) return;
     startingRef.current = true;
 
@@ -55,6 +81,7 @@ export function PlayContent() {
         // Re-solve the board with the current dictionary
         const api = getDictionaryAPI();
         const wordsAvailable = await api.solve(card.board, card.gridSize);
+        if (!mountedRef.current) return;
 
         startGame({
           gameMode: "review",
@@ -69,6 +96,7 @@ export function PlayContent() {
         const { board, wordsAvailable } = await generateValidBoard(
           settings.gridSize,
         );
+        if (!mountedRef.current) return;
 
         startGame({
           gameMode: mode,
@@ -81,10 +109,42 @@ export function PlayContent() {
       }
     };
 
-    init().finally(() => {
-      startingRef.current = false;
-    });
-  }, [isLoaded, phase, reviewLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+    init()
+      .catch((e) => {
+        if (mountedRef.current) {
+          setStartError(e instanceof Error ? e.message : String(e));
+        }
+      })
+      .finally(() => {
+        startingRef.current = false;
+      });
+  }, [isLoaded, phase, reviewLoaded, attempt, startError]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A game in progress (e.g. resumed from home) doesn't need the dictionary
+  if (phase === "playing" || phase === "review") return <GameShell />;
+
+  if (startError) {
+    return (
+      <Centered>
+        <p className="text-red-500">Couldn&apos;t start a game: {startError}</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setStartError(null);
+              setAttempt((n) => n + 1);
+            }}
+            className="min-h-11 rounded-lg bg-blue-500 px-4 font-medium text-white"
+          >
+            Retry
+          </button>
+          <Link href="/" className={homeLinkClass}>
+            Home
+          </Link>
+        </div>
+      </Centered>
+    );
+  }
 
   if (error) {
     return (
