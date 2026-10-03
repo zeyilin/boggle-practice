@@ -8,45 +8,37 @@ interface FeedbackProps {
   result: ValidationResult | null;
 }
 
+// Text (not just color) carries the meaning, per the accessibility spec
 const MESSAGES: Record<string, { text: string; color: string }> = {
-  accepted: { text: "Nice!", color: "text-green-500" },
-  "not-a-word": { text: "Not a valid word", color: "text-red-500" },
-  "too-short": { text: "Too short", color: "text-red-400" },
-  "already-found": { text: "Already found", color: "text-yellow-500" },
-  "no-path": { text: "No valid path", color: "text-red-500" },
+  accepted: { text: "✓ Nice!", color: "text-green-500" },
+  "not-a-word": { text: "✗ Not a word", color: "text-red-500" },
+  "too-short": { text: "✗ Too short", color: "text-red-400" },
+  "already-found": { text: "↺ Already found", color: "text-yellow-500" },
+  "no-path": { text: "✗ Not on board", color: "text-red-500" },
 };
 
 export function Feedback({ result }: FeedbackProps) {
-  const [displayResult, setDisplayResult] = useState<ValidationResult | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [shown, setShown] = useState<ValidationResult | null>(null);
 
-  // When result prop changes, show it
+  // When result prop changes, show it briefly
   useEffect(() => {
     if (!result) return;
     // This is responding to prop changes, not a cascading render
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDisplayResult(result);
-    setVisible(true);
-    const timer = setTimeout(() => setVisible(false), 1500);
+    setShown(result);
+    const timer = setTimeout(() => setShown(null), 1500);
     return () => clearTimeout(timer);
   }, [result]);
 
-  if (!displayResult || !visible) return null;
+  const msg = shown ? MESSAGES[shown.reason] : undefined;
 
-  const msg = MESSAGES[displayResult.reason];
-  if (!msg) return null;
-
+  // The live region stays mounted so screen readers announce each change
   return (
     <div
-      className={cn(
-        "text-sm font-semibold transition-opacity duration-300",
-        visible ? "opacity-100" : "opacity-0",
-        msg.color,
-      )}
+      className={cn("shrink-0 text-sm font-semibold whitespace-nowrap", msg?.color)}
       role="status"
-      aria-live="assertive"
     >
-      {msg.text}
+      {msg?.text}
     </div>
   );
 }

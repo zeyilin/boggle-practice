@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types";
 import { scoreWord, calculateScore, calculateMaxScore } from "@/lib/scoring";
 import { MIN_WORD_LENGTH } from "@/lib/constants";
+import { findWordPath } from "@/lib/word-path";
 import {
   saveGameRecord,
   saveInProgressGame,
@@ -154,8 +155,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const match = state.wordsAvailable.find((w) => w.word === normalized);
 
     if (!match) {
-      // Could be either not a word or no valid path
-      const result: ValidationResult = { valid: false, reason: "not-a-word" };
+      // Typed words may not be traceable at all; say which it is
+      const result: ValidationResult = {
+        valid: false,
+        reason: findWordPath(state.board, normalized) ? "not-a-word" : "no-path",
+      };
       set({ lastSubmitResult: result, currentWord: "", currentPath: [] });
       return result;
     }

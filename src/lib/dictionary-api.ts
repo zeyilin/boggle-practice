@@ -33,9 +33,12 @@ class DictionaryAPI {
     return this._currentDictionary;
   }
 
-  private createWorker(): Worker {
+  private createWorker(preload?: string): Worker {
+    // The worker starts loading the `name`d dictionary as soon as it boots,
+    // before any "load" request arrives
     const worker = new Worker(
       new URL("../workers/dictionary.worker.ts", import.meta.url),
+      { name: preload },
     );
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -62,7 +65,7 @@ class DictionaryAPI {
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
         this.worker?.terminate();
-        this.worker = this.createWorker();
+        this.worker = this.createWorker(this._currentDictionary ?? undefined);
 
         // Re-load dictionary if it was loaded before
         if (this._currentDictionary) {
@@ -72,6 +75,16 @@ class DictionaryAPI {
     };
 
     return worker;
+  }
+
+  /**
+   * Create the worker ahead of the first request, and have it start loading
+   * the likely dictionary right away (a later load() of it is then free).
+   */
+  warmUp(preload?: string) {
+    if (!this.worker) {
+      this.worker = this.createWorker(preload);
+    }
   }
 
   private send(msg: WorkerRequest): Promise<WorkerResponse> {

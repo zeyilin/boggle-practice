@@ -1,6 +1,6 @@
 # Boggle Practice
 
-A solo Boggle practice PWA — timed games, an untimed Zen mode, a board solver, and spaced-repetition review of boards you struggled on. Fully client-side and offline-first: word lists ship as static assets and are loaded into a trie inside a Web Worker (which also solves boards off the main thread), and all data lives in IndexedDB.
+A solo Boggle practice PWA — timed games, an untimed Zen mode, a board solver, and spaced-repetition review of boards you struggled on. Fully client-side and offline-first: word lists are precompiled into a compact DAWG that ships as a static asset and loads with no parsing inside a Web Worker (which also solves boards off the main thread), and all data lives in IndexedDB. Plays with touch (swipe or tap), mouse, or keyboard alone.
 
 Built with Next.js (App Router, static export), React, TypeScript, and Tailwind CSS v4. See [SPEC.md](SPEC.md) for the full product spec and [CLAUDE.md](CLAUDE.md) for the developer guide.
 
@@ -14,7 +14,7 @@ npm run lint         # eslint
 npm run build        # static export → out/
 ```
 
-The normalized word lists in `public/dictionaries/` are checked in. To rebuild them from raw source lists, run `npm run compile-dicts`.
+The normalized word lists (`public/dictionaries/*.txt`) and their compiled DAWGs (`*.dawg.gz`) are checked in. After changing a word list, run `npm run compile-dicts` to regenerate both (a test fails if the committed DAWG is stale).
 
 ## Deployment — Cloudflare Pages (pages.dev)
 

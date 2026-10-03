@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import { getAllGameRecords } from "@/lib/db";
 import {
   calculateDashboardStats,
@@ -12,11 +13,24 @@ import {
   type WordLengthData,
 } from "@/lib/stats-calculator";
 import type { GameRecord } from "@/lib/types";
-import { ScoreChart } from "@/components/stats/score-chart";
-import { WordLengthChart } from "@/components/stats/word-length-chart";
+import { PageHeader } from "@/components/layout/page-header";
+
+// Recharts is by far the largest chunk in the app: load it after the
+// numbers are on screen instead of blocking the whole page on it
+const chartFallback = () => <div className="h-48" aria-hidden="true" />;
+const ScoreChart = dynamic(
+  () => import("@/components/stats/score-chart").then((m) => m.ScoreChart),
+  { ssr: false, loading: chartFallback },
+);
+const WordLengthChart = dynamic(
+  () =>
+    import("@/components/stats/word-length-chart").then(
+      (m) => m.WordLengthChart,
+    ),
+  { ssr: false, loading: chartFallback },
+);
 
 export default function StatsPage() {
-  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [wordLengthData, setWordLengthData] = useState<WordLengthData[]>([]);
@@ -35,40 +49,33 @@ export default function StatsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-400">Loading stats...</p>
+      <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
+        <PageHeader title="Stats" />
+        <p className="appear-delayed text-zinc-400" role="status">
+          Loading stats...
+        </p>
       </div>
     );
   }
 
   if (!stats || stats.gamesPlayed === 0) {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center p-6">
-        <h1 className="text-2xl font-bold mb-4">Stats</h1>
+      <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
+        <PageHeader title="Stats" />
         <p className="text-zinc-500 mb-6">No games played yet.</p>
-        <button
-          onClick={() => router.push("/")}
-          className="text-blue-500 hover:underline"
+        <Link
+          href="/play?mode=classic"
+          className="inline-flex min-h-11 items-center px-3 text-blue-500 hover:underline"
         >
-          &larr; Play a game
-        </button>
+          Play a game &rarr;
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
-      <div className="flex items-center w-full mb-6">
-        <button
-          onClick={() => router.push("/")}
-          className="text-sm text-blue-500 hover:underline"
-        >
-          &larr; Back
-        </button>
-        <h1 className="text-2xl font-bold flex-1 text-center mr-10">
-          Stats
-        </h1>
-      </div>
+      <PageHeader title="Stats" />
 
       {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full mb-8">

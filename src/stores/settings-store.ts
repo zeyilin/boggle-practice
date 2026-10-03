@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { UserSettings, GridSize, DictionaryName, ThemeSetting, TouchInputMode } from "@/lib/types";
 import { DEFAULT_SETTINGS } from "@/lib/types";
 import { getSettings, saveSettings } from "@/lib/db";
+import { writeDictionaryHint } from "@/lib/dictionary-hint";
 
 interface SettingsStore extends UserSettings {
   _hydrated: boolean;
@@ -33,13 +34,18 @@ function getSettingsFromState(state: SettingsStore): UserSettings {
   };
 }
 
+let hydration: Promise<void> | null = null;
+
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   ...DEFAULT_SETTINGS,
   _hydrated: false,
 
-  hydrate: async () => {
-    const saved = await getSettings();
-    set({ ...saved, _hydrated: true });
+  hydrate: () => {
+    hydration ??= getSettings().then((saved) => {
+      set({ ...saved, _hydrated: true });
+      writeDictionaryHint(saved.dictionary);
+    });
+    return hydration;
   },
 
   setGridSize: (gridSize) => {
@@ -48,6 +54,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
   setDictionary: (dictionary) => {
     set({ dictionary });
+    writeDictionaryHint(dictionary);
     persist(getSettingsFromState({ ...get(), dictionary }));
   },
   setTimerDuration: (timerDuration) => {

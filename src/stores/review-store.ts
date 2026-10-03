@@ -12,11 +12,22 @@ import {
   REVIEW_GRADUATE_THRESHOLD,
 } from "@/lib/constants";
 import { v4 as uuidv4 } from "uuid";
+import { useSettingsStore } from "./settings-store";
+
+// Refresh what's due (the badge on home, and Play Again in review mode)
+// for the dictionary being played, which may differ from a card's
+function reloadQueue() {
+  return useReviewStore
+    .getState()
+    .loadReviewQueue(useSettingsStore.getState().dictionary);
+}
 
 interface ReviewStore {
   dueCards: ReviewCard[];
   allCards: ReviewCard[];
   isLoading: boolean;
+  /** The queue has been read from IndexedDB at least once. */
+  hasLoaded: boolean;
 
   loadReviewQueue: (dictionary: DictionaryName) => Promise<void>;
 
@@ -44,6 +55,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
   dueCards: [],
   allCards: [],
   isLoading: false,
+  hasLoaded: false,
 
   loadReviewQueue: async (dictionary) => {
     set({ isLoading: true });
@@ -51,7 +63,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
       getDueReviewCards(dictionary),
       getAllReviewCards(),
     ]);
-    set({ dueCards, allCards, isLoading: false });
+    set({ dueCards, allCards, isLoading: false, hasLoaded: true });
   },
 
   maybeAddToReview: async (record) => {
@@ -81,6 +93,7 @@ export const useReviewStore = create<ReviewStore>((set) => ({
     };
 
     await saveReviewCard(card);
+    await reloadQueue();
   },
 
   updateAfterReview: async (cardId, discoveryRate) => {
@@ -103,5 +116,6 @@ export const useReviewStore = create<ReviewStore>((set) => ({
       };
       await saveReviewCard(updated);
     }
+    await reloadQueue();
   },
 }));

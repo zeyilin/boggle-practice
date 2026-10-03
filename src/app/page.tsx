@@ -1,34 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDictionaryStore } from "@/stores/dictionary-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useGameStore } from "@/stores/game-store";
 import { useReviewStore } from "@/stores/review-store";
 import { getInProgressGame, clearInProgressGame } from "@/lib/db";
+import { cn } from "@/lib/utils";
 import type { InProgressGame } from "@/lib/types";
+
+const modeClass =
+  "flex h-14 items-center justify-center rounded-xl font-semibold text-lg transition-transform active:scale-[0.98] motion-reduce:transition-none";
+const primaryMode = cn(
+  modeClass,
+  "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900",
+);
+const secondaryMode = cn(modeClass, "bg-zinc-200 dark:bg-zinc-800");
 
 export default function Home() {
   const router = useRouter();
   const settings = useSettingsStore();
+  // The dictionary loads app-wide on startup (AppBootstrap). Modes are
+  // links, usable immediately: /play waits for the dictionary if needed.
   const { isLoading, isLoaded, error, loadDictionary } = useDictionaryStore();
+  // Route prefetches (dozens of small requests) wait until the dictionary
+  // is in, so they don't compete with it on startup
+  const prefetch = isLoaded ? null : false;
   const { phase: gamePhase, reset: resetGame, resumeGame } = useGameStore();
-  const { dueCards, loadReviewQueue } = useReviewStore();
+  const dueCards = useReviewStore((s) => s.dueCards);
+  const loadReviewQueue = useReviewStore((s) => s.loadReviewQueue);
+  const hydrated = useSettingsStore((s) => s._hydrated);
   const [savedGame, setSavedGame] = useState<InProgressGame | null>(null);
 
-  // Hydrate settings and load dictionary on mount
+  // Boards come due as time passes: refresh the review badge on each visit
   useEffect(() => {
-    settings.hydrate().then(() => {
-      loadDictionary(settings.dictionary);
-      loadReviewQueue(settings.dictionary);
-    });
+    if (hydrated) loadReviewQueue(settings.dictionary);
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Check for interrupted game
+  // Check for interrupted game
+  useEffect(() => {
     getInProgressGame().then((game) => {
       if (game) setSavedGame(game);
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset game state when returning to home
   useEffect(() => {
@@ -36,10 +52,6 @@ export default function Home() {
       resetGame();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const startMode = (mode: string) => {
-    router.push(`/play?mode=${mode}`);
-  };
 
   const handleResume = () => {
     if (!savedGame) return;
@@ -63,7 +75,7 @@ export default function Home() {
       </p>
 
       {/* Resume prompt */}
-      {savedGame && isLoaded && (
+      {savedGame && (
         <div className="w-full max-w-sm mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
           <p className="text-sm font-medium mb-2">
             You have an interrupted {savedGame.gameMode} game
@@ -76,14 +88,14 @@ export default function Home() {
             <button
               type="button"
               onClick={handleResume}
-              className="px-4 py-2 text-sm rounded-lg bg-blue-500 text-white font-medium"
+              className="min-h-11 px-4 text-sm rounded-lg bg-blue-500 text-white font-medium"
             >
               Resume
             </button>
             <button
               type="button"
               onClick={handleDiscard}
-              className="px-4 py-2 text-sm rounded-lg bg-zinc-200 dark:bg-zinc-700"
+              className="min-h-11 px-4 text-sm rounded-lg bg-zinc-200 dark:bg-zinc-700"
             >
               Discard
             </button>
@@ -91,46 +103,48 @@ export default function Home() {
         </div>
       )}
 
-      <div className="grid gap-4 w-full max-w-sm">
-        <button
-          onClick={() => startMode("classic")}
-          className="h-14 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50"
-          disabled={!isLoaded}
-        >
+      <nav className="grid gap-4 w-full max-w-sm" aria-label="Game modes">
+        <Link href="/play?mode=classic" prefetch={prefetch} className={primaryMode}>
           Classic Mode
-        </button>
-        <button
-          onClick={() => startMode("zen")}
-          className="h-14 rounded-xl bg-zinc-200 dark:bg-zinc-800 font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50"
-          disabled={!isLoaded}
-        >
+        </Link>
+        <Link href="/play?mode=zen" prefetch={prefetch} className={secondaryMode}>
           Zen Mode
-        </button>
-        <button
-          onClick={() => router.push("/solver")}
-          className="h-14 rounded-xl bg-zinc-200 dark:bg-zinc-800 font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50"
-          disabled={!isLoaded}
-        >
+        </Link>
+        <Link href="/solver" prefetch={prefetch} className={secondaryMode}>
           Solver
-        </button>
-        <button
-          onClick={() => startMode("review")}
-          className="h-14 rounded-xl bg-zinc-200 dark:bg-zinc-800 font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50 relative"
-          disabled={!isLoaded || dueCards.length === 0}
-        >
-          Review
-          {dueCards.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">
+        </Link>
+        {dueCards.length > 0 ? (
+          <Link
+            href="/play?mode=review"
+            prefetch={prefetch}
+            className={cn(secondaryMode, "relative")}
+            aria-label={`Review, ${dueCards.length} boards due`}
+          >
+            Review
+            <span
+              className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold"
+              aria-hidden="true"
+            >
               {dueCards.length}
             </span>
-          )}
-        </button>
-      </div>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className={cn(secondaryMode, "opacity-50")}
+            aria-label="Review, no boards due"
+          >
+            Review
+          </button>
+        )}
+      </nav>
 
       {/* Settings quick-access */}
-      <button
-        onClick={() => router.push("/settings")}
-        className="mt-6 flex gap-3 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+      <Link
+        href="/settings"
+        prefetch={prefetch}
+        className="mt-6 flex min-h-11 items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
       >
         <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800">
           {settings.gridSize}×{settings.gridSize}
@@ -142,35 +156,34 @@ export default function Home() {
           {settings.dictionary.toUpperCase()}
         </span>
         <span className="px-2 py-1">Settings →</span>
-      </button>
+      </Link>
 
-      {/* Status */}
-      <div className="mt-4 text-sm">
+      {/* Status: only worth mentioning if it's slow or failed */}
+      <div className="mt-4 min-h-5 text-sm" role="status">
         {isLoading && (
-          <span className="text-zinc-400">Loading dictionary...</span>
+          <span className="appear-delayed text-zinc-400">Loading dictionary...</span>
         )}
         {error && (
-          <div className="text-red-500">
+          <span className="text-red-500">
             {error}{" "}
             <button
+              type="button"
               onClick={() => loadDictionary(settings.dictionary)}
-              className="underline"
+              className="min-h-11 px-2 underline"
             >
               Retry
             </button>
-          </div>
-        )}
-        {isLoaded && (
-          <span className="text-green-500">Dictionary ready</span>
+          </span>
         )}
       </div>
 
-      <button
-        onClick={() => router.push("/stats")}
-        className="mt-4 text-sm text-blue-500 hover:underline"
+      <Link
+        href="/stats"
+        prefetch={prefetch}
+        className="mt-2 inline-flex min-h-11 items-center px-3 text-sm text-blue-500 hover:underline"
       >
         View Stats
-      </button>
+      </Link>
     </div>
   );
 }

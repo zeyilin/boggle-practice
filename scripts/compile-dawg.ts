@@ -1,21 +1,27 @@
 /**
  * Dictionary compiler for Boggle Practice.
  *
- * v1 approach: takes raw word list files and produces compressed text files
- * (one word per line, uppercase, sorted) placed in public/dictionaries/.
+ * For each dictionary, produces in public/dictionaries/:
+ *   - <name>.txt       normalized word list (one per line, uppercase, sorted)
+ *   - <name>.dawg.gz   packed DAWG (src/lib/trie.ts), gzipped
  *
- * The web worker loads these and builds a Trie at runtime.
- * The text files compress well with Brotli/gzip served by the CDN.
+ * The web worker loads the .dawg.gz with zero parsing; the .txt is only the
+ * fallback for browsers without DecompressionStream. The binary is gzipped
+ * here because Cloudflare Pages won't compress an octet-stream on the fly.
  *
  * Usage: npx tsx scripts/compile-dawg.ts
  *
- * Expects raw word lists in scripts/data/:
+ * Reads raw word lists from scripts/data/ (see download-wordlists.ts):
  *   - twl06.txt
  *   - sowpods.txt (optional)
+ * If a raw list is absent, the DAWG is rebuilt from the committed
+ * public/dictionaries/<name>.txt instead, so it can always be regenerated.
  */
 
 import * as fs from "fs";
 import * as path from "path";
+import * as zlib from "zlib";
+import { buildTrie, serializeTrie } from "../src/lib/trie";
 
 const DATA_DIR = path.join(__dirname, "data");
 const OUTPUT_DIR = path.join(__dirname, "..", "public", "dictionaries");
@@ -30,7 +36,7 @@ const MIN_LENGTH = 3;
 // Maximum practical word length on a Boggle board
 const MAX_LENGTH = 25;
 
-function processWordList(inputPath: string, outputPath: string): number {
+function normalizeWordList(inputPath: string): string[] {
   const raw = fs.readFileSync(inputPath, "utf-8");
   const words = raw
     .split(/\r?\n/)
@@ -42,28 +48,44 @@ function processWordList(inputPath: string, outputPath: string): number {
     });
 
   // Deduplicate and sort
-  const unique = [...new Set(words)].sort();
+  return [...new Set(words)].sort();
+}
 
-  fs.writeFileSync(outputPath, unique.join("\n"), "utf-8");
-  return unique.length;
+function kb(bytes: number): string {
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 // Main
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 for (const dict of DICTIONARIES) {
-  const inputPath = path.join(DATA_DIR, dict.file);
-  const outputPath = path.join(OUTPUT_DIR, `${dict.name}.txt`);
+  const rawPath = path.join(DATA_DIR, dict.file);
+  const txtPath = path.join(OUTPUT_DIR, `${dict.name}.txt`);
+  const dawgPath = path.join(OUTPUT_DIR, `${dict.name}.dawg.gz`);
 
-  if (!fs.existsSync(inputPath)) {
+  let words: string[];
+  if (fs.existsSync(rawPath)) {
+    words = normalizeWordList(rawPath);
+    fs.writeFileSync(txtPath, words.join("\n"), "utf-8");
+    console.log(`✓ ${dict.name}: ${words.length} words → ${txtPath}`);
+  } else if (fs.existsSync(txtPath)) {
+    words = normalizeWordList(txtPath);
     console.log(
-      `⚠ Skipping ${dict.name}: ${dict.file} not found in scripts/data/`,
+      `• ${dict.name}: ${dict.file} not in scripts/data/, using committed ${txtPath}`,
+    );
+  } else {
+    console.log(
+      `⚠ Skipping ${dict.name}: ${dict.file} not found in scripts/data/ or public/dictionaries/`,
     );
     continue;
   }
 
-  const count = processWordList(inputPath, outputPath);
-  console.log(`✓ ${dict.name}: ${count} words → ${outputPath}`);
+  const bytes = serializeTrie(buildTrie(words));
+  const gz = zlib.gzipSync(bytes, { level: 9 });
+  fs.writeFileSync(dawgPath, gz);
+  console.log(
+    `✓ ${dict.name}: DAWG ${kb(bytes.length)} raw, ${kb(gz.length)} gzipped → ${dawgPath}`,
+  );
 }
 
 console.log("\nDone. Dictionary files written to public/dictionaries/");

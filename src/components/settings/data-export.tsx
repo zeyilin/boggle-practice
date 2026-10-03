@@ -29,11 +29,13 @@ export function DataExport() {
       <button
         type="button"
         onClick={handleExport}
-        className="px-4 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-sm font-medium hover:bg-zinc-300 dark:hover:bg-zinc-600"
+        className="min-h-11 px-4 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-sm font-medium hover:bg-zinc-300 dark:hover:bg-zinc-600"
       >
         Export Data
       </button>
-      {status && <span className="text-xs text-green-500">{status}</span>}
+      <span className="text-xs text-green-500" role="status">
+        {status}
+      </span>
     </div>
   );
 }

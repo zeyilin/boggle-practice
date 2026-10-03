@@ -26,18 +26,37 @@ export function Timer({ elapsedTime, timerDuration }: TimerProps) {
         ? "text-yellow-500"
         : "text-zinc-700 dark:text-zinc-300";
 
+  // Screen readers hear the time at 30s and 10s left, not every tick
+  const announcement =
+    remaining <= 10
+      ? "10 seconds remaining"
+      : remaining <= 30
+        ? "30 seconds remaining"
+        : "";
+
   return (
-    <div
-      className={cn("text-3xl font-mono font-bold tabular-nums", urgency)}
-      role="timer"
-      aria-live={remaining <= 30 ? "assertive" : "polite"}
-      aria-label={
-        isCountdown
-          ? `${minutes} minutes ${seconds} seconds remaining`
-          : `${minutes} minutes ${seconds} seconds elapsed`
-      }
-    >
-      {formatted}
+    <div className="shrink-0">
+      {/* Fixed-size and contained, so the per-second text change is laid
+          out in isolation instead of re-laying out the whole game screen
+          (it's monospace, so one ch per character fits exactly) */}
+      <div
+        className={cn(
+          "h-9 text-3xl font-mono font-bold tabular-nums [contain:strict]",
+          urgency,
+        )}
+        style={{ width: `${formatted.length}ch` }}
+        role="timer"
+        aria-label={
+          isCountdown
+            ? `${minutes} minutes ${seconds} seconds remaining`
+            : `${minutes} minutes ${seconds} seconds elapsed`
+        }
+      >
+        {formatted}
+      </div>
+      <span className="sr-only" aria-live="assertive">
+        {announcement}
+      </span>
     </div>
   );
 }

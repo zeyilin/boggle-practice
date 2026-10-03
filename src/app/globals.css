@@ -5,15 +5,43 @@
 @theme inline {
   --color-background: #ffffff;
   --color-foreground: #171717;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 .dark {
+  color-scheme: dark;
   --color-background: #0a0a0a;
   --color-foreground: #ededed;
 }
 
-body {
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+/* Fonts are Tailwind's default system stacks (--font-sans / --font-mono):
+   nothing to download, decode, or swap in, so text renders on first paint */
+
+@layer base {
+  /* One consistent, visible focus ring for keyboard users */
+  :focus-visible {
+    outline: 2px solid var(--color-blue-500);
+    outline-offset: 2px;
+  }
+
+  /* No double-tap-to-zoom delay on controls (board tiles opt out of all
+     touch gestures with touch-none, which wins as a utility) */
+  a,
+  button,
+  input,
+  label {
+    touch-action: manipulation;
+  }
+}
+
+/* Loading indicators that only appear if loading is actually slow, so
+   near-instant loads don't flash a spinner */
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+
+@utility appear-delayed {
+  opacity: 0;
+  animation: appear 0s 300ms forwards;
 }

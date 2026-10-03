@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import type { GameRecord, Position } from "@/lib/types";
+import { useState, useMemo, useEffect, useRef } from "react";
+import Link from "next/link";
+import type { GameRecord, WordWithPath } from "@/lib/types";
 import { scoreWord } from "@/lib/scoring";
 import { useReviewStore } from "@/stores/review-store";
 import { useGameStore } from "@/stores/game-store";
@@ -16,9 +16,15 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
-  const router = useRouter();
   const [sortMode, setSortMode] = useState<SortMode>("length");
-  const [highlightedPath, setHighlightedPath] = useState<Position[] | undefined>();
+  const [highlighted, setHighlighted] = useState<WordWithPath | undefined>();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The word input unmounts when the game ends; move focus to the results
+  // (not to Play Again — an Enter meant for a last word mustn't start a game)
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
   const { maybeAddToReview, updateAfterReview } = useReviewStore();
   const reviewCardId = useGameStore((s) => s.reviewCardId);
 
@@ -74,7 +80,9 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
 
   return (
     <div className="flex w-full flex-col items-center gap-6 p-4 lg:mx-auto lg:max-w-[1800px] lg:p-6">
-      <h1 className="text-2xl font-bold">Game Over</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold focus:outline-none">
+        Game Over
+      </h1>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg">
@@ -91,7 +99,7 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
             board={record.board}
             gridSize={record.gridSize}
             selectedPath={[]}
-            highlightedPath={highlightedPath}
+            highlightedPath={highlighted?.path}
             className="mx-auto max-w-[max(16rem,calc(100dvh-16rem))]"
           />
         </div>
@@ -99,14 +107,17 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
         <div className="w-full lg:flex-[1_1_0%]">
           {/* Sort controls */}
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">Missed words:</span>
-            <div className="flex gap-1">
+            <h2 id="missed-words" className="text-sm text-zinc-500 dark:text-zinc-400">
+              Missed words ({missedWords.length}):
+            </h2>
+            <div className="flex gap-1" role="group" aria-label="Sort missed words by">
               {(["length", "points", "alpha"] as SortMode[]).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setSortMode(mode)}
-                  className={`px-2 py-0.5 text-xs rounded ${
+                  aria-pressed={sortMode === mode}
+                  className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 text-xs rounded ${
                     sortMode === mode
                       ? "bg-blue-500 text-white"
                       : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
@@ -119,13 +130,18 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
           </div>
 
           {/* Missed words list */}
-          <div className="flex flex-col gap-0.5 max-h-[50dvh] overflow-y-auto">
+          {/* Tap or press a missed word to trace it on the board */}
+          <div
+            className="flex flex-col gap-0.5 max-h-[50dvh] overflow-y-auto"
+            aria-labelledby="missed-words"
+          >
             {sortedMissed.map((w) => (
               <button
                 key={w.word}
                 type="button"
-                className="flex items-center justify-between px-3 py-1.5 rounded text-sm font-mono bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/30 text-left w-full"
-                onClick={() => setHighlightedPath(w.path)}
+                aria-pressed={highlighted?.word === w.word}
+                className="flex items-center justify-between px-3 py-1.5 pointer-coarse:min-h-11 rounded text-sm font-mono bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/30 aria-pressed:bg-green-100 dark:aria-pressed:bg-green-900/50 text-left w-full"
+                onClick={() => setHighlighted(w)}
               >
                 <span>{w.word}</span>
                 <span className="text-zinc-400 text-xs">
@@ -137,9 +153,9 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
 
           {/* Found words */}
           <div className="mt-4">
-            <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+            <h2 className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
               Found words ({record.wordsFound.length}):
-            </div>
+            </h2>
             <div className="flex flex-col gap-0.5 max-h-[30dvh] overflow-y-auto">
               {record.wordsFound.map((word) => (
                 <div
@@ -158,17 +174,16 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
       </div>
 
       <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="h-12 px-8 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold text-lg transition-transform active:scale-[0.98]"
+        <Link
+          href="/"
+          className="inline-flex h-12 items-center px-8 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold text-lg transition-transform active:scale-[0.98] motion-reduce:transition-none"
         >
           Home
-        </button>
+        </Link>
         <button
           type="button"
           onClick={onPlayAgain}
-          className="h-12 px-8 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-lg transition-transform active:scale-[0.98]"
+          className="h-12 px-8 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-lg transition-transform active:scale-[0.98] motion-reduce:transition-none"
         >
           Play Again
         </button>

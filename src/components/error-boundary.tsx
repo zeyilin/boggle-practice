@@ -37,7 +37,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}
-              className="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium"
+              className="min-h-11 px-4 rounded-lg bg-blue-500 text-white text-sm font-medium"
             >
               Reload
             </button>
