@@ -173,10 +173,10 @@ export function ResultsScreen({ record, onPlayAgain }: ResultsScreenProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex gap-4">
         <Link
           href="/"
-          className="inline-flex h-12 items-center rounded-xl bg-zinc-200 px-6 font-semibold text-lg dark:bg-zinc-800"
+          className="inline-flex h-12 items-center px-8 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold text-lg transition-transform active:scale-[0.98] motion-reduce:transition-none"
         >
           Home
         </Link>

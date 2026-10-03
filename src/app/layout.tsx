@@ -38,7 +38,7 @@ export default function RootLayout({
         {/* Blocking on purpose: sets the dark class before first paint */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <body className="min-h-[100dvh] flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
